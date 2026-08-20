@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "GigLink",
+    "slug": "giglink",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "giglink",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+  "adaptiveIcon": {
+    "backgroundColor": "#0B0B0F",
+    "foregroundImage": "./assets/images/android-icon-foreground.png",
+    "backgroundImage": "./assets/images/android-icon-background.png",
+    "monochromeImage": "./assets/images/android-icon-monochrome.png"
+  },
+  "package": "com.deepak_06v.giglink",
+  "config": {
+    "googleMaps": {
+      "apiKey": "AIzaSyA8YEbQ9sjBWfyhjOJ5c__e3SLKfoByIIw"
+    }
+  }
+},
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+  "expo-router",
+  [
+    "expo-splash-screen",
+    {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0B0F"
+    }
+  ],
+  "expo-secure-store",
+  "expo-font",
+  "expo-web-browser",
+  "@react-native-google-signin/google-signin",
+  "@react-native-community/datetimepicker",
+  [
+    "expo-notifications",
+    {
+      "defaultChannel": "giglink-notifications"
+    }
+  ],
+  "expo-location"
+],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fbdeb6c0-9205-435a-9f86-02dc076dc161"
+      }
+    },
+    "owner": "deepak_06v"
+  }
+}

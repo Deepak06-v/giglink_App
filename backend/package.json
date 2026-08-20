@@ -1,0 +1,26 @@
+{
+  "name": "gig-marketplace-backend",
+  "version": "1.0.0",
+  "description": "Backend for gig marketplace application",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test src/services/job.service.test.js src/services/device.service.test.js src/services/push.service.test.js src/services/auth.service.test.js src/services/otp.service.test.js src/services/sms.service.test.js src/services/phoneAuth.service.test.js src/services/googleAuth.service.test.js src/utils/phone.test.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "expo-server-sdk": "^7.1.0",
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.6.2",
+    "express-validator": "^7.0.1",
+    "google-auth-library": "^11.0.2",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "libphonenumber-js": "^1.13.11",
+    "mongoose": "^8.0.3"
+  }
+}
