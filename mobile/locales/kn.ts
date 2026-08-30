@@ -347,6 +347,9 @@ export const kn = {
     cityPlaceholder: 'ಬೆಂಗಳೂರು',
     statePlaceholder: 'ಕರ್ನಾಟಕ',
     pincodePlaceholder: '560001',
+    locationOptionalHint: 'ನೀವು ವಿಳಾಸವನ್ನು ಹಸ್ತಚಾಲಿತವಾಗಿ ನಮೂದಿಸಬಹುದು. ನಕ್ಷೆ ಸ್ಥಳವು ಐಚ್ಛಿಕವಾಗಿದೆ.',
+    useMapPicker: 'ನಕ್ಷೆ / ಸ್ಥಳ ಆಯ್ಕೆ (ಐಚ್ಛಿಕ)',
+    hideMapPicker: 'ನಕ್ಷೆ ಸ್ಥಳ ತೆಗೆದುಹಾಕಿ',
     overnightHint: 'ರಾತ್ರಿ ಶಿಫ್ಟ್‌ಗಳು (ಉದಾ. 10:00 PM → 2:00 AM) ಬೆಂಬಲಿತವಾಗಿದೆ.',
     scheduleSummary: 'ವೇಳಾಪಟ್ಟಿ ಸಾರಾಂಶ',
     day: 'ದಿನ',
@@ -386,6 +389,7 @@ export const kn = {
     errorStateRequired: 'ರಾಜ್ಯ ಅಗತ್ಯವಿದೆ.',
     errorPincodeRequired: 'ಪಿನ್ ಕೋಡ್ ಅಗತ್ಯವಿದೆ.',
     errorCoordinatesInvalid: 'ಮಾನ್ಯ ಅಕ್ಷಾಂಶ ಮತ್ತು ರೇಖಾಂಶ ನಿರ್ದೇಶಾಂಕಗಳು ಅಗತ್ಯವಿದೆ.',
+    errorCoordinatesPartial: 'ಅಕ್ಷಾಂಶ ಮತ್ತು ರೇಖಾಂಶ ಎರಡನ್ನೂ ಒಟ್ಟಿಗೆ ನಮೂದಿಸಿ, ಅಥವಾ ಎರಡನ್ನೂ ಖಾಲಿ ಬಿಡಿ.',
     creating: 'ಡ್ರಾಫ್ಟ್ ರಚಿಸಲಾಗುತ್ತಿದೆ...',
   },
   maps: {

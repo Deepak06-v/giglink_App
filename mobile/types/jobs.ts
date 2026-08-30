@@ -44,7 +44,7 @@ export interface JobLocation {
   city: string;
   state: string;
   pincode: string;
-  coordinates: {
+  coordinates?: {
     latitude: number;
     longitude: number;
   };

@@ -71,14 +71,23 @@ const createJobValidation = [
     .trim()
     .notEmpty()
     .withMessage("Pincode is required"),
+  body("location.coordinates")
+    .optional()
+    .custom((value) => {
+      const hasLat = value && value.latitude !== undefined && value.latitude !== null && value.latitude !== "";
+      const hasLng = value && value.longitude !== undefined && value.longitude !== null && value.longitude !== "";
+      if (hasLat !== hasLng) {
+        throw new Error("Both latitude and longitude must be provided together");
+      }
+      return true;
+    })
+    .withMessage("Both latitude and longitude must be provided together"),
   body("location.coordinates.latitude")
-    .notEmpty()
-    .withMessage("Latitude is required")
+    .optional()
     .isFloat({ min: -90, max: 90 })
     .withMessage("Latitude must be a number between -90 and 90"),
   body("location.coordinates.longitude")
-    .notEmpty()
-    .withMessage("Longitude is required")
+    .optional()
     .isFloat({ min: -180, max: 180 })
     .withMessage("Longitude must be a number between -180 and 180"),
   

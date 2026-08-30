@@ -278,16 +278,25 @@ const processJobData = (jobData) => {
     }
   }
 
-  // Validate and ensure coordinates are properly formatted
-  if (processed.location?.coordinates) {
+  // Validate and ensure coordinates are properly formatted when supplied.
+  // If coordinates are entirely absent, skip validation and allow address-only jobs.
+  const { coordinates = {} } = processed.location || {};
+  const hasLat = coordinates.latitude !== undefined && coordinates.latitude !== null && coordinates.latitude !== "";
+  const hasLng = coordinates.longitude !== undefined && coordinates.longitude !== null && coordinates.longitude !== "";
+  if (hasLat || hasLng) {
     try {
       const validated = validateCoordinates(
-        processed.location.coordinates.latitude,
-        processed.location.coordinates.longitude
+        coordinates.latitude,
+        coordinates.longitude
       );
       processed.location.coordinates = validated;
     } catch (error) {
       throw new Error(`Location validation failed: ${error.message}`);
+    }
+  } else {
+    // Neither coordinate supplied — drop any empty coordinates object
+    if (processed.location) {
+      delete processed.location.coordinates;
     }
   }
 

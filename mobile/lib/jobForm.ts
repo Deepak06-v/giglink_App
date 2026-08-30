@@ -53,7 +53,7 @@ export interface JobFormPayload {
     city: string;
     state: string;
     pincode: string;
-    coordinates: {
+    coordinates?: {
       latitude: number;
       longitude: number;
     };
@@ -138,6 +138,8 @@ export function buildJobPayload(state: JobFormState): JobFormPayload {
     .map((item) => item.trim())
     .filter(Boolean);
 
+  const parsedCoordinates = parseCoordinates(state);
+
   return {
     title: state.title.trim(),
     description: state.description.trim(),
@@ -161,16 +163,20 @@ export function buildJobPayload(state: JobFormState): JobFormPayload {
       dressCode: state.dressCode.trim(),
       languages,
     },
-    location: {
-      address: state.address.trim(),
-      city: state.city.trim(),
-      state: state.state.trim(),
-      pincode: state.pincode.trim(),
-      coordinates: {
-        latitude: Number(state.latitude),
-        longitude: Number(state.longitude),
-      },
-    },
+    location: parsedCoordinates
+      ? {
+          address: state.address.trim(),
+          city: state.city.trim(),
+          state: state.state.trim(),
+          pincode: state.pincode.trim(),
+          coordinates: parsedCoordinates,
+        }
+      : {
+          address: state.address.trim(),
+          city: state.city.trim(),
+          state: state.state.trim(),
+          pincode: state.pincode.trim(),
+        },
   };
 }
 
@@ -337,7 +343,11 @@ export function validateStep(state: JobFormState, step: number): StepValidation 
       if (!state.pincode.trim()) {
         push('jobForm.errorPincodeRequired');
       }
-      if (!parseCoordinates(state)) {
+      const hasLat = state.latitude.trim() !== '';
+      const hasLng = state.longitude.trim() !== '';
+      if (hasLat !== hasLng) {
+        push('jobForm.errorCoordinatesPartial');
+      } else if (hasLat && hasLng && !parseCoordinates(state)) {
         push('jobForm.errorCoordinatesInvalid');
       }
       break;

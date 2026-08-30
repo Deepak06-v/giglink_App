@@ -141,15 +141,11 @@ export default function LoginScreen() {
       />
 
       <View style={styles.googleRow}>
-        <Pressable
-          accessibilityRole="button"
-          disabled={isLoading || googleLoading}
-          onPress={() => void handleGoogle()}
-        >
-          <Text variant="bodyMd" color="brand">
-            {googleLoading ? 'Connecting to Google...' : 'Continue with Google'}
-          </Text>
-        </Pressable>
+        <Button
+          disabled={true}
+          variant="ghost"
+          label="Continue with Google"
+        />
       </View>
 
       <View style={styles.phoneRow}>
@@ -163,15 +159,12 @@ export default function LoginScreen() {
       </View>
 
       <View style={styles.guestRow}>
-        <Pressable
-          accessibilityRole="button"
+        <Button
           disabled={isLoading}
+          variant="secondary"
+          label="Continue as guest"
           onPress={handleContinueAsGuest}
-        >
-          <Text variant="bodyMd" color="secondary">
-            Continue as guest
-          </Text>
-        </Pressable>
+        />
       </View>
 
       <View style={styles.footer}>

@@ -9,17 +9,15 @@ const locationSchema = new mongoose.Schema(
     coordinates: {
       latitude: {
         type: Number,
-        required: true,
         validate: {
-          validator: (v) => !isNaN(v) && isFinite(v) && v >= -90 && v <= 90,
+          validator: (v) => v === undefined || v === null || (!isNaN(v) && isFinite(v) && v >= -90 && v <= 90),
           message: "Latitude must be a number between -90 and 90",
         },
       },
       longitude: {
         type: Number,
-        required: true,
         validate: {
-          validator: (v) => !isNaN(v) && isFinite(v) && v >= -180 && v <= 180,
+          validator: (v) => v === undefined || v === null || (!isNaN(v) && isFinite(v) && v >= -180 && v <= 180),
           message: "Longitude must be a number between -180 and 180",
         },
       },

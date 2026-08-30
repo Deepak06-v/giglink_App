@@ -347,6 +347,9 @@ export const en = {
     cityPlaceholder: 'Bengaluru',
     statePlaceholder: 'Karnataka',
     pincodePlaceholder: '560001',
+    locationOptionalHint: 'You can enter the address manually. Map location is optional.',
+    useMapPicker: 'Map / Select Location (optional)',
+    hideMapPicker: 'Remove map location',
     overnightHint: 'Overnight shifts (e.g. 10:00 PM → 2:00 AM) are supported.',
     scheduleSummary: 'Schedule summary',
     day: 'day',
@@ -386,6 +389,7 @@ export const en = {
     errorStateRequired: 'State is required.',
     errorPincodeRequired: 'Pincode is required.',
     errorCoordinatesInvalid: 'Valid latitude and longitude coordinates are required.',
+    errorCoordinatesPartial: 'Both latitude and longitude are required together, or leave both empty.',
     creating: 'Creating draft...',
   },
   maps: {

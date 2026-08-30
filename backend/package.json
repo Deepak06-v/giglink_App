@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "node --test src/services/job.service.test.js src/services/device.service.test.js src/services/push.service.test.js src/services/auth.service.test.js src/services/otp.service.test.js src/services/sms.service.test.js src/services/phoneAuth.service.test.js src/services/googleAuth.service.test.js src/utils/phone.test.js"
+    "test": "node --test src/services/job.service.test.js src/services/job.coordinates.test.js src/services/device.service.test.js src/services/push.service.test.js src/services/auth.service.test.js src/services/otp.service.test.js src/services/sms.service.test.js src/services/phoneAuth.service.test.js src/services/googleAuth.service.test.js src/utils/phone.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

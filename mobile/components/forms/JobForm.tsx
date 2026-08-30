@@ -47,6 +47,7 @@ export function JobForm({ initial, submitLabel, onSubmit }: JobFormProps) {
   const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   useEffect(() => {
     if (initial) {
@@ -373,15 +374,31 @@ export function JobForm({ initial, submitLabel, onSubmit }: JobFormProps) {
               placeholder={t('jobForm.pincodePlaceholder')}
               error={fieldErrors.pincode}
             />
-            <LocationPicker
-  initialLocation={coordinates}
-  onLocationSelected={({ latitude, longitude }) => {
-    setField('latitude', String(latitude));
-    setField('longitude', String(longitude));
-  }}
-/>
-
-            
+            <Text variant="caption" color="muted">
+              {t('jobForm.locationOptionalHint')}
+            </Text>
+            {showMapPicker ? (
+              <View style={styles.mapBlock}>
+                <LocationPicker
+                  initialLocation={coordinates}
+                  onLocationSelected={({ latitude, longitude }) => {
+                    setField('latitude', String(latitude));
+                    setField('longitude', String(longitude));
+                  }}
+                />
+                <Button
+                  label={t('jobForm.hideMapPicker')}
+                  variant="secondary"
+                  onPress={() => setShowMapPicker(false)}
+                />
+              </View>
+            ) : (
+              <Button
+                label={t('jobForm.useMapPicker')}
+                variant="secondary"
+                onPress={() => setShowMapPicker(true)}
+              />
+            )}
           </View>
         ) : null}
 
@@ -415,10 +432,12 @@ export function JobForm({ initial, submitLabel, onSubmit }: JobFormProps) {
               label={t('jobForm.location')}
               value={`${form.address}, ${form.city}, ${form.state} ${form.pincode}`}
             />
-            <ReviewSection
-              label={t('jobForm.coordinates')}
-              value={`${form.latitude}, ${form.longitude}`}
-            />
+            {form.latitude.trim() && form.longitude.trim() ? (
+              <ReviewSection
+                label={t('jobForm.coordinates')}
+                value={`${form.latitude}, ${form.longitude}`}
+              />
+            ) : null}
             <Text variant="caption" color="muted" style={styles.reviewNote}>
               {t('jobForm.reviewNote')}
             </Text>
