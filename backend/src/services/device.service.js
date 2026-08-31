@@ -34,6 +34,11 @@ const getActiveDeviceTokens = async (userId) => {
   return devices.map((device) => device.token);
 };
 
+const getActiveDevices = async (userId) => {
+  const devices = await DeviceToken.find({ userId }).select("token provider").lean();
+  return devices.map((device) => ({ token: device.token, provider: device.provider }));
+};
+
 const removeDeviceTokens = async (tokens) => {
   if (!Array.isArray(tokens) || tokens.length === 0) {
     return { deleted: 0 };
@@ -46,5 +51,6 @@ export {
   registerDeviceToken,
   unregisterDeviceToken,
   getActiveDeviceTokens,
+  getActiveDevices,
   removeDeviceTokens,
 };
