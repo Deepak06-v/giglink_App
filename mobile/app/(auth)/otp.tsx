@@ -11,10 +11,12 @@ import { getApiErrorMessage } from '@/lib/api/errors';
 import { useAuthStore } from '@/store/authStore';
 import type { UserRole } from '@/types';
 import { getRoleHomeRoute, resolvePendingIntentRoute } from '@/utils/routing';
+import { useTranslation, translate } from '@/lib/i18n';
 
 const RESEND_COOLDOWN_SECONDS = 30;
 
 export default function OtpScreen() {
+  const { t } = useTranslation();
   const params = useLocalSearchParams<{ phone?: string; country?: string }>();
   const phone = typeof params.phone === 'string' ? params.phone : '';
   const country = typeof params.country === 'string' ? params.country : 'IN';
@@ -38,7 +40,13 @@ export default function OtpScreen() {
     return () => clearInterval(id);
   }, [countdown]);
 
+  const [verifying, setVerifying] = useState(false);
+
   const handleVerify = async () => {
+    if (verifying) {
+      return;
+    }
+    setVerifying(true);
     clearError();
     setResendMessage(null);
 
@@ -55,6 +63,7 @@ export default function OtpScreen() {
       router.replace(getRoleHomeRoute(user.role));
     } catch {
       // Error state is handled in the store.
+      setVerifying(false);
     }
   };
 
@@ -65,14 +74,14 @@ export default function OtpScreen() {
     try {
       await authApi.sendPhoneOtp({ phone, country });
       setCountdown(RESEND_COOLDOWN_SECONDS);
-      setResendMessage('A new code has been sent.');
+      setResendMessage(t('auth.codeSent'));
     } catch (err) {
-      setResendMessage(getApiErrorMessage(err, 'Unable to resend code'));
+      setResendMessage(getApiErrorMessage(err, t('auth.unableResendCode')));
     }
   };
 
   return (
-    <AuthShell title="Enter code" subtitle="Enter the 6-digit code we texted you">
+    <AuthShell title={t('auth.enterCode')} subtitle={t('auth.otpSubtitle')}>
       <View style={styles.backRow}>
         <Pressable
           accessibilityRole="button"
@@ -80,13 +89,13 @@ export default function OtpScreen() {
           onPress={() => router.back()}
         >
           <Text variant="bodyMd" color="brand">
-            Back
+            {t('common.back')}
           </Text>
         </Pressable>
       </View>
 
       <Input
-        label="Code"
+        label={t('auth.code')}
         value={code}
         onChangeText={(value) => {
           clearError();
@@ -94,14 +103,14 @@ export default function OtpScreen() {
         }}
         keyboardType="number-pad"
         maxLength={6}
-        placeholder="123456"
+        placeholder={t('auth.codePlaceholder')}
         editable={!isLoading}
       />
 
       <View style={styles.resendRow}>
         {countdown > 0 ? (
           <Text variant="bodyMd" color="secondary">
-            Resend code in {countdown}s
+            {t('auth.resendIn', { countdown })}
           </Text>
         ) : (
           <Pressable
@@ -110,7 +119,7 @@ export default function OtpScreen() {
             onPress={() => void handleResend()}
           >
             <Text variant="bodyMd" color="brand">
-              Resend code
+              {t('auth.resendCode')}
             </Text>
           </Pressable>
         )}
@@ -130,15 +139,15 @@ export default function OtpScreen() {
 
       <View style={styles.newAccountBlock}>
         <Text variant="label" color="secondary">
-          New to GigLink?
+          {t('auth.newToGigLink')}
         </Text>
         <Text variant="caption" color="muted">
-          Only used when this phone number creates a new account.
+          {t('auth.newAccountNote')}
         </Text>
       </View>
 
       <Input
-        label="Full name"
+        label={t('auth.fullName')}
         value={name}
         onChangeText={(value) => {
           clearError();
@@ -146,17 +155,17 @@ export default function OtpScreen() {
         }}
         autoCapitalize="words"
         textContentType="name"
-        placeholder="Your name"
-        editable={!isLoading}
+        placeholder={t('auth.namePlaceholder')}
+        editable={!isLoading && !verifying}
       />
 
-      <RoleSelector value={role} onChange={setRole} disabled={isLoading} />
+      <RoleSelector value={role} onChange={setRole} disabled={isLoading || verifying} />
 
       <Button
-        label={isLoading ? 'Verifying...' : 'Verify & Continue'}
+        label={(isLoading || verifying) ? t('auth.verifying') : t('auth.verifyContinue')}
         onPress={() => void handleVerify()}
-        loading={isLoading}
-        disabled={!phone || code.length !== 6}
+        loading={isLoading || verifying}
+        disabled={!phone || code.length !== 6 || verifying || isLoading}
         fullWidth
       />
     </AuthShell>

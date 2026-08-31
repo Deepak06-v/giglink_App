@@ -119,6 +119,65 @@ export async function handlePushTokenChange(nativeTokenData: string): Promise<vo
 }
 
 /**
+ * Persist the current native FCM registration token so it can be registered
+ * with the backend once an authenticated session is available, and so logout
+ * can unregister it. Never logs the full token.
+ */
+export async function persistNativeToken(token: string): Promise<void> {
+  if (Platform.OS !== 'android') {
+    return;
+  }
+  await secureStorage.set(NOTIFICATION_STORAGE_KEYS.DEVICE_TOKEN, token);
+}
+
+/**
+ * Register a native FCM token with the backend. Only reaches the API when the
+ * caller confirms the user is authenticated; otherwise the token is persisted
+ * (see {@link registerStoredFcmToken}) so it can be sent once auth is ready.
+ * Guest mode is never registered.
+ */
+export async function registerFcmToken(token: string, isAuthenticated: boolean): Promise<void> {
+  if (Platform.OS !== 'android') {
+    return;
+  }
+  await persistNativeToken(token);
+  if (!isAuthenticated) {
+    return;
+  }
+  try {
+    await registerDeviceToken(token, 'android', 'fcm');
+  } catch (error) {
+    console.warn(
+      '[GigLink] Failed to register native FCM token:',
+      error instanceof Error ? error.message : error,
+    );
+  }
+}
+
+/**
+ * Register whatever FCM token is currently persisted on this device. Call once
+ * an authenticated session becomes available so a token obtained earlier (or
+ * before login / on cold start) is pushed to the backend.
+ */
+export async function registerStoredFcmToken(): Promise<void> {
+  if (Platform.OS !== 'android') {
+    return;
+  }
+  const stored = await secureStorage.get(NOTIFICATION_STORAGE_KEYS.DEVICE_TOKEN);
+  if (!stored) {
+    return;
+  }
+  try {
+    await registerDeviceToken(stored, 'android', 'fcm');
+  } catch (error) {
+    console.warn(
+      '[GigLink] Failed to register stored FCM token:',
+      error instanceof Error ? error.message : error,
+    );
+  }
+}
+
+/**
  * Best-effort unregistration of the CURRENT device token only.
  * Must never block logout — all errors are swallowed.
  */
@@ -128,18 +187,30 @@ export async function unregisterForPushNotifications(): Promise<void> {
   }
 
   const token = await readPersistedToken();
-  if (!token) {
-    return;
+  if (token) {
+    try {
+      await unregisterDeviceToken(token);
+    } catch (error) {
+      console.warn(
+        '[GigLink] Failed to unregister device token (logout continues):',
+        error instanceof Error ? error.message : error,
+      );
+    } finally {
+      await secureStorage.delete(NOTIFICATION_STORAGE_KEYS.PUSH_TOKEN);
+    }
   }
 
-  try {
-    await unregisterDeviceToken(token);
-  } catch (error) {
-    console.warn(
-      '[GigLink] Failed to unregister device token (logout continues):',
-      error instanceof Error ? error.message : error,
-    );
-  } finally {
-    await secureStorage.delete(NOTIFICATION_STORAGE_KEYS.PUSH_TOKEN);
+  const nativeToken = await secureStorage.get(NOTIFICATION_STORAGE_KEYS.DEVICE_TOKEN);
+  if (nativeToken) {
+    try {
+      await unregisterDeviceToken(nativeToken);
+    } catch (error) {
+      console.warn(
+        '[GigLink] Failed to unregister native FCM token (logout continues):',
+        error instanceof Error ? error.message : error,
+      );
+    } finally {
+      await secureStorage.delete(NOTIFICATION_STORAGE_KEYS.DEVICE_TOKEN);
+    }
   }
 }

@@ -22,7 +22,7 @@ describe("device.service", () => {
     const calls = [];
     mock.method(DeviceToken, "findOneAndUpdate", async (filter, update, options) => {
       calls.push({ filter, update, options });
-      return { _id: "d1", ...filter, platform: update.$set.platform, lastActiveAt: update.$set.lastActiveAt };
+      return { _id: "d1", ...filter, platform: update.$set.platform, provider: update.$set.provider, lastActiveAt: update.$set.lastActiveAt };
     });
 
     const device = await registerDeviceToken("user1", "ExponentPushToken[a]", "android");
@@ -30,9 +30,61 @@ describe("device.service", () => {
     assert.equal(calls.length, 1);
     assert.deepEqual(calls[0].filter, { userId: "user1", token: "ExponentPushToken[a]" });
     assert.equal(calls[0].update.$set.platform, "android");
+    // Expo registrations keep the legacy default provider and stay Expo-compatible.
+    assert.equal(calls[0].update.$set.provider, "expo");
     assert.ok(calls[0].update.$set.lastActiveAt instanceof Date);
     assert.equal(calls[0].options.upsert, true);
     assert.equal(device.platform, "android");
+    assert.equal(device.provider, "expo");
+  });
+
+  it("registers an FCM token with provider = fcm", async () => {
+    const calls = [];
+    mock.method(DeviceToken, "findOneAndUpdate", async (filter, update) => {
+      calls.push({ filter, update });
+      return { _id: "d1", ...filter, platform: update.$set.platform, provider: update.$set.provider };
+    });
+
+    const device = await registerDeviceToken("user1", "FCM-TOKEN-123", "android", "fcm");
+
+    assert.equal(calls.length, 1);
+    assert.deepEqual(calls[0].filter, { userId: "user1", token: "FCM-TOKEN-123" });
+    assert.equal(calls[0].update.$set.platform, "android");
+    assert.equal(calls[0].update.$set.provider, "fcm");
+    assert.equal(device.provider, "fcm");
+  });
+
+  it("rejects an unsupported push provider", async () => {
+    await assert.rejects(
+      () => registerDeviceToken("user1", "apns-token", "ios", "apns"),
+      (error) => error.statusCode === 400 && /Unsupported push provider/.test(error.message),
+    );
+  });
+
+  it("re-registering the same FCM token upserts (no duplicate)", async () => {
+    let callCount = 0;
+    mock.method(DeviceToken, "findOneAndUpdate", async (_filter, update) => {
+      callCount += 1;
+      return { _id: "d1", token: _filter.token, provider: update.$set.provider };
+    });
+
+    await registerDeviceToken("user1", "FCM-TOKEN-123", "android", "fcm");
+    await registerDeviceToken("user1", "FCM-TOKEN-123", "android", "fcm");
+
+    assert.equal(callCount, 2, "each call goes through the single upsert path — no duplicate rows");
+  });
+
+  it("re-registering the same token updates provider on upsert", async () => {
+    const calls = [];
+    mock.method(DeviceToken, "findOneAndUpdate", async (filter, update) => {
+      calls.push(update.$set.provider);
+      return { _id: "d1", provider: update.$set.provider };
+    });
+
+    await registerDeviceToken("user1", "SOME-TOKEN", "android", "expo");
+    await registerDeviceToken("user1", "SOME-TOKEN", "android", "fcm");
+
+    assert.deepEqual(calls, ["expo", "fcm"]);
   });
 
   it("re-registering the same token upserts (no duplicate)", async () => {

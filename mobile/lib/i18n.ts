@@ -1,10 +1,15 @@
+import { useCallback } from 'react';
 import { useLanguageStore, type AppLanguage } from '@/store/languageStore';
-import { en, type MessageKey } from '@/locales/en';
+import { en } from '@/locales/en';
 import { kn } from '@/locales/kn';
 
-const messages: Record<AppLanguage, typeof en> = { en, kn };
+type DeepString<T> = T extends string
+  ? string
+  : { [K in keyof T]: DeepString<T[K]> };
 
-export type { MessageKey };
+type TranslationDictionary = DeepString<typeof en>;
+
+const messages: Record<AppLanguage, TranslationDictionary> = { en, kn };
 
 type Path<T> = T extends string
   ? never
@@ -52,8 +57,14 @@ export function translate(key: TranslationKey, params?: Params): string {
 
 export function useTranslation() {
   const language = useLanguageStore((state) => state.language);
+  
+  const t = useCallback(
+    (key: TranslationKey, params?: Params) => interpolate(resolveValue(language, key), params),
+    [language]
+  );
+
   return {
     language,
-    t: (key: TranslationKey, params?: Params) => interpolate(resolveValue(language, key), params),
+    t,
   };
 }

@@ -1,4 +1,5 @@
 import { Tabs } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Briefcase, ClipboardList, FileText, User } from '@/components/icons';
 import { useFontFamily } from '@/constants/fonts';
 import { colors, radius, sizes, spacing } from '@/constants/theme';
@@ -7,6 +8,9 @@ import { useTranslation } from '@/lib/i18n';
 export default function WorkerTabsLayout() {
   const { t } = useTranslation();
   const fontFamily = useFontFamily(500);
+  const insets = useSafeAreaInsets();
+
+  const dynamicTabBarHeight = sizes.tabBarHeight + insets.bottom;
 
   return (
     <Tabs
@@ -14,7 +18,7 @@ export default function WorkerTabsLayout() {
         headerShown: false,
         sceneStyle: {
           backgroundColor: colors.background.primary,
-          paddingBottom: sizes.tabBarHeight,
+          paddingBottom: dynamicTabBarHeight,
         },
         tabBarActiveTintColor: colors.brand.primary,
         tabBarInactiveTintColor: colors.text.muted,
@@ -23,9 +27,9 @@ export default function WorkerTabsLayout() {
           backgroundColor: colors.surface.elevated,
           borderTopColor: colors.border.default,
           borderTopWidth: 1,
-          height: sizes.tabBarHeight,
+          height: dynamicTabBarHeight,
           paddingTop: spacing.sm,
-          paddingBottom: spacing.sm,
+          paddingBottom: spacing.sm + insets.bottom,
           borderTopLeftRadius: radius.xl,
           borderTopRightRadius: radius.xl,
         },

@@ -6,6 +6,8 @@
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/noto-sans-kannada": "^0.4.3",
     "@react-native-community/datetimepicker": "8.4.1",
+    "@react-native-firebase/app": "23.8.4",
+    "@react-native-firebase/messaging": "23.8.4",
     "@react-native-google-signin/google-signin": "^16.1.4",
     "axios": "^1.19.0",
     "expo": "^53.0.27",

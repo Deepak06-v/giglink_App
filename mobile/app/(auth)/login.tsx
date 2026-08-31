@@ -95,9 +95,9 @@ export default function LoginScreen() {
   };
 
   return (
-    <AuthShell title="Welcome back" subtitle="Sign in to continue to GigLink">
+    <AuthShell title={t('auth.welcomeBack')} subtitle={t('auth.loginSubtitle')}>
       <Input
-        label="Email"
+        label={t('auth.email')}
         value={email}
         onChangeText={(value) => {
           clearError();
@@ -107,12 +107,12 @@ export default function LoginScreen() {
         autoComplete="email"
         keyboardType="email-address"
         textContentType="emailAddress"
-        placeholder="you@example.com"
+        placeholder={t('auth.emailPlaceholder')}
         editable={!isLoading}
       />
 
       <Input
-        label="Password"
+        label={t('auth.password')}
         value={password}
         onChangeText={(value) => {
           clearError();
@@ -121,7 +121,7 @@ export default function LoginScreen() {
         secureTextEntry
         autoComplete="password"
         textContentType="password"
-        placeholder="Your password"
+        placeholder={t('auth.passwordPlaceholder')}
         editable={!isLoading}
       />
 
@@ -134,7 +134,7 @@ export default function LoginScreen() {
       ) : null}
 
       <Button
-        label={isLoading ? 'Signing in...' : 'Sign In'}
+        label={isLoading ? t('auth.signingIn') : t('auth.signIn')}
         onPress={() => void handleLogin()}
         loading={isLoading}
         fullWidth
@@ -144,17 +144,17 @@ export default function LoginScreen() {
         <Button
           disabled={true}
           variant="ghost"
-          label="Continue with Google"
+          label={t('auth.continueWithGoogle')}
         />
       </View>
 
       <View style={styles.phoneRow}>
         <Link href={'/(auth)/phone' as Href} asChild>
-          <Pressable accessibilityRole="link" disabled={isLoading}>
-            <Text variant="bodyMd" color="brand">
-              Continue with phone
-            </Text>
-          </Pressable>
+          <Button
+            variant="secondary"
+            label={t('auth.continueWithPhone')}
+            disabled={isLoading}
+          />
         </Link>
       </View>
 
@@ -162,19 +162,19 @@ export default function LoginScreen() {
         <Button
           disabled={isLoading}
           variant="secondary"
-          label="Continue as guest"
+          label={t('auth.continueAsGuest')}
           onPress={handleContinueAsGuest}
         />
       </View>
 
       <View style={styles.footer}>
         <Text variant="bodyMd" color="secondary">
-          New to GigLink?
+          {t('auth.newToGigLink')}
         </Text>
         <Link href="/(auth)/signup" asChild>
           <Pressable accessibilityRole="link" disabled={isLoading}>
             <Text variant="bodyMd" color="brand">
-              Create account
+              {t('auth.createAccount')}
             </Text>
           </Pressable>
         </Link>

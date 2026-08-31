@@ -7,10 +7,12 @@ import { RoleSelector } from '@/components/auth/RoleSelector';
 import { Button, Input, Text } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
+import { useTranslation } from '@/lib/i18n';
 import type { UserRole } from '@/types';
 import { getRoleHomeRoute, resolvePendingIntentRoute } from '@/utils/routing';
 
 export default function SignupScreen() {
+  const { t } = useTranslation();
   const signup = useAuthStore((state) => state.signup);
   const isLoading = useAuthStore((state) => state.isLoading);
   const error = useAuthStore((state) => state.error);
@@ -48,9 +50,9 @@ export default function SignupScreen() {
   };
 
   return (
-    <AuthShell title="Create account" subtitle="Join GigLink and get started">
+    <AuthShell title={t('auth.createAccount')} subtitle={t('auth.joinSubtitle')}>
       <Input
-        label="Full name"
+        label={t('auth.fullName')}
         value={name}
         onChangeText={(value) => {
           clearError();
@@ -58,12 +60,12 @@ export default function SignupScreen() {
         }}
         autoComplete="name"
         textContentType="name"
-        placeholder="Your name"
+        placeholder={t('auth.namePlaceholder')}
         editable={!isLoading}
       />
 
       <Input
-        label="Email"
+        label={t('auth.email')}
         value={email}
         onChangeText={(value) => {
           clearError();
@@ -73,12 +75,12 @@ export default function SignupScreen() {
         autoComplete="email"
         keyboardType="email-address"
         textContentType="emailAddress"
-        placeholder="you@example.com"
+        placeholder={t('auth.emailPlaceholder')}
         editable={!isLoading}
       />
 
       <Input
-        label="Password"
+        label={t('auth.password')}
         value={password}
         onChangeText={(value) => {
           clearError();
@@ -87,7 +89,7 @@ export default function SignupScreen() {
         secureTextEntry
         autoComplete="new-password"
         textContentType="newPassword"
-        placeholder="At least 8 characters"
+        placeholder={t('auth.passwordHint')}
         editable={!isLoading}
       />
 
@@ -100,7 +102,7 @@ export default function SignupScreen() {
       ) : null}
 
       <Button
-        label={isLoading ? 'Creating account...' : 'Create Account'}
+        label={isLoading ? t('auth.creatingAccount') : t('auth.createAccountButton')}
         onPress={() => void handleSignup()}
         loading={isLoading}
         fullWidth
@@ -108,12 +110,12 @@ export default function SignupScreen() {
 
       <View style={styles.footer}>
         <Text variant="bodyMd" color="secondary">
-          Already have an account?
+          {t('auth.alreadyHaveAccount')}
         </Text>
         <Link href="/(auth)/login" asChild>
           <Pressable accessibilityRole="link" disabled={isLoading}>
             <Text variant="bodyMd" color="brand">
-              Sign in
+              {t('auth.signIn')}
             </Text>
           </Pressable>
         </Link>

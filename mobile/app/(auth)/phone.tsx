@@ -7,6 +7,7 @@ import { Button, Input, Text } from '@/components/ui';
 import { colors, radius, spacing } from '@/constants/theme';
 import * as authApi from '@/lib/api/auth';
 import { getApiErrorMessage } from '@/lib/api/errors';
+import { useTranslation } from '@/lib/i18n';
 
 interface CountryOption {
   iso: string;
@@ -24,6 +25,7 @@ const COUNTRY_OPTIONS: CountryOption[] = [
 ];
 
 export default function PhoneAuthScreen() {
+  const { t } = useTranslation();
   const [country, setCountry] = useState<string>('IN');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +35,7 @@ export default function PhoneAuthScreen() {
     setError(null);
 
     if (phone.trim().length < 6) {
-      setError('Enter a valid phone number');
+      setError(t('auth.invalidPhone'));
       return;
     }
 
@@ -45,14 +47,26 @@ export default function PhoneAuthScreen() {
         params: { phone: phone.trim(), country },
       } as unknown as Href);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Unable to send code'));
+      setError(getApiErrorMessage(err, t('auth.unableSendCode')));
     } finally {
       setIsLoading(false);
     }
   };
 
+  const getCountryLabel = (iso: string, fallback: string) => {
+    switch (iso) {
+      case 'IN': return t('auth.countryIndia');
+      case 'US': return t('auth.countryUS');
+      case 'GB': return t('auth.countryUK');
+      case 'AU': return t('auth.countryAustralia');
+      case 'AE': return t('auth.countryUAE');
+      case 'SG': return t('auth.countrySingapore');
+      default: return fallback;
+    }
+  };
+
   return (
-    <AuthShell title="Continue with phone" subtitle="We'll text you a one-time code to sign in">
+    <AuthShell title={t('auth.continueWithPhone')} subtitle={t('auth.phoneSubtitle')}>
       <View style={styles.backRow}>
         <Pressable
           accessibilityRole="button"
@@ -60,14 +74,14 @@ export default function PhoneAuthScreen() {
           onPress={() => router.back()}
         >
           <Text variant="bodyMd" color="brand">
-            Back to sign in
+            {t('auth.backToSignIn')}
           </Text>
         </Pressable>
       </View>
 
       <View style={styles.countryBlock}>
         <Text variant="label" color="secondary">
-          Country
+          {t('auth.country')}
         </Text>
         <View style={styles.countryRow}>
           {COUNTRY_OPTIONS.map((option) => {
@@ -98,7 +112,7 @@ export default function PhoneAuthScreen() {
                   variant="caption"
                   color={selected ? 'brand' : 'muted'}
                 >
-                  {option.label}
+                  {getCountryLabel(option.iso, option.label)}
                 </Text>
               </Pressable>
             );
@@ -107,7 +121,7 @@ export default function PhoneAuthScreen() {
       </View>
 
       <Input
-        label="Phone number"
+        label={t('auth.phoneNumber')}
         value={phone}
         onChangeText={(value) => {
           setError(null);
@@ -116,7 +130,7 @@ export default function PhoneAuthScreen() {
         keyboardType="phone-pad"
         textContentType="telephoneNumber"
         autoComplete="tel"
-        placeholder="98765 43210"
+        placeholder={t('auth.phonePlaceholder')}
         editable={!isLoading}
       />
 
@@ -127,7 +141,7 @@ export default function PhoneAuthScreen() {
       ) : null}
 
       <Button
-        label={isLoading ? 'Sending code...' : 'Send Code'}
+        label={isLoading ? t('auth.sendingCode') : t('auth.sendCode')}
         onPress={() => void handleContinue()}
         loading={isLoading}
         fullWidth

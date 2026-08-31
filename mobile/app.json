@@ -8,6 +8,10 @@
     "scheme": "giglink",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+    "androidNavigationBar": {
+      "barStyle": "light-content",
+      "backgroundColor": "#1B1B22"
+    },
     "ios": {
       "supportsTablet": false
     },

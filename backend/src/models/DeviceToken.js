@@ -18,6 +18,12 @@ const deviceTokenSchema = new mongoose.Schema(
       required: true,
       enum: ["android", "ios", "web"],
     },
+    provider: {
+      type: String,
+      required: true,
+      enum: ["expo", "fcm"],
+      default: "expo",
+    },
     lastActiveAt: {
       type: Date,
       default: Date.now,

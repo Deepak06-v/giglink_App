@@ -1,6 +1,13 @@
 import DeviceToken from "../models/DeviceToken.js";
 
-const registerDeviceToken = async (userId, token, platform) => {
+const VALID_PROVIDERS = ["expo", "fcm"];
+
+const registerDeviceToken = async (userId, token, platform, provider = "expo") => {
+  if (!VALID_PROVIDERS.includes(provider)) {
+    const error = new Error(`Unsupported push provider: ${provider}`);
+    error.statusCode = 400;
+    throw error;
+  }
   const device = await DeviceToken.findOneAndUpdate(
     { userId, token },
     {
@@ -8,6 +15,7 @@ const registerDeviceToken = async (userId, token, platform) => {
         userId,
         token,
         platform,
+        provider,
         lastActiveAt: new Date(),
       },
     },
