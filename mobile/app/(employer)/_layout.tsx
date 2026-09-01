@@ -18,6 +18,7 @@ export default function EmployerLayout() {
         <Stack.Screen name="jobs/edit/[jobId]" />
         <Stack.Screen name="applications/[applicationId]" />
         <Stack.Screen name="profile/edit" />
+        <Stack.Screen name="profile/[userId]" />
         <Stack.Screen name="notifications" />
       </Stack>
     </EmployerGroupGuard>

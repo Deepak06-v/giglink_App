@@ -12,6 +12,7 @@ import {
   markAllNotificationsAsRead,
   markNotificationAsRead,
 } from '@/lib/api/notifications';
+import { useTranslation } from '@/lib/i18n';
 import type { Notification } from '@/types';
 import {
   employerApplicationDetailsRoute,
@@ -20,32 +21,34 @@ import {
 
 const PAGE_SIZE = 20;
 
-function relativeTime(value: string): string {
-  const date = new Date(value);
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (Number.isNaN(seconds) || seconds < 0) {
-    return '';
-  }
-  if (seconds < 60) {
-    return 'Just now';
-  }
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) {
-    return `${minutes}m ago`;
-  }
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return `${hours}h ago`;
-  }
-  const days = Math.floor(hours / 24);
-  if (days < 7) {
-    return `${days}d ago`;
-  }
-  return date.toLocaleDateString('en-IN');
-}
-
 export default function NotificationsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
+
+  const relativeTime = (value: string): string => {
+    const date = new Date(value);
+    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+    if (Number.isNaN(seconds) || seconds < 0) {
+      return '';
+    }
+    if (seconds < 60) {
+      return t('notifications.justNow');
+    }
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) {
+      return t('notifications.minutesAgo', { count: minutes });
+    }
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+      return t('notifications.hoursAgo', { count: hours });
+    }
+    const days = Math.floor(hours / 24);
+    if (days < 7) {
+      return t('notifications.daysAgo', { count: days });
+    }
+    return date.toLocaleDateString('en-IN');
+  };
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -174,14 +177,14 @@ export default function NotificationsScreen() {
     <View style={styles.headerRow}>
       <View>
         <Text variant="headingLg" color="primary">
-          Notifications
+          {t('notifications.title')}
         </Text>
         <Text variant="bodyMd" color="secondary">
-          Updates from your jobs
+          {t('notifications.employerSubtitle')}
         </Text>
       </View>
       <Button
-        label="Mark all read"
+        label={t('notifications.markAllRead')}
         variant="ghost"
         onPress={handleMarkAll}
         loading={markingAll}
@@ -193,7 +196,7 @@ export default function NotificationsScreen() {
   if (error && !loading && notifications.length === 0) {
     return (
       <Screen>
-        <DetailHeader title="Notifications" />
+        <DetailHeader title={t('notifications.title')} />
         {header}
         <ErrorState message={error} onRetry={() => void loadNotifications(1, 'initial')} />
       </Screen>
@@ -203,7 +206,7 @@ export default function NotificationsScreen() {
   return (
     <Screen style={styles.screen} padded={false}>
       <View style={styles.paddedHeader}>
-        <DetailHeader title="Notifications" />
+        <DetailHeader title={t('notifications.title')} />
       </View>
       <FlatList
         data={notifications}
@@ -218,7 +221,7 @@ export default function NotificationsScreen() {
               ))}
             </View>
           ) : (
-            <EmptyState title="You're all caught up" message="Notifications about your jobs will appear here." />
+            <EmptyState title={t('notifications.allCaughtUp')} message={t('notifications.employerEmpty')} />
           )
         }
         ListFooterComponent={

@@ -17,6 +17,7 @@ const notificationSchema = new mongoose.Schema(
         "APPLICATION_REJECTED",
         "APPLICATION_WITHDRAWN",
         "JOB_FILLED",
+        "JOB_STARTS_SOON",
         "WORKER_COMPLETION_CONFIRMED",
         "EMPLOYER_COMPLETION_CONFIRMED",
         "JOB_COMPLETED",

@@ -55,7 +55,13 @@
       "defaultChannel": "giglink-notifications"
     }
   ],
-  "expo-location"
+  "expo-location",
+  [
+    "expo-image-picker",
+    {
+      "photosPermission": "GigLink needs access to your photos so you can set your profile photo or company logo."
+    }
+  ]
 ],
     "experiments": {
       "typedRoutes": true

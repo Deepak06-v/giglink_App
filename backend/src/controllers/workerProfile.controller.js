@@ -1,4 +1,5 @@
 import { getWorkerProfile, createOrUpdateWorkerProfile } from "../services/workerProfile.service.js";
+import { getWorkerProfileCompletion } from "../services/profileCompletion.service.js";
 
 const handleError = (res, error) => {
   const statusCode = error.statusCode || 500;
@@ -12,11 +13,14 @@ const handleError = (res, error) => {
 export const getWorkerProfileController = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const profile = await getWorkerProfile(userId);
+    const [profile, completion] = await Promise.all([
+      getWorkerProfile(userId),
+      getWorkerProfileCompletion(userId),
+    ]);
     return res.json({
       success: true,
       message: "Worker profile retrieved successfully",
-      data: { profile },
+      data: { profile: { ...profile, completion } },
     });
   } catch (error) {
     return handleError(res, error);

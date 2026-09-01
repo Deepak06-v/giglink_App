@@ -4,15 +4,16 @@ import { Text as RNText, StyleSheet } from 'react-native';
 import { useTypography } from '@/constants/fonts';
 import { colors } from '@/constants/theme';
 
-export type TextVariant = 'headingXl' | 'headingLg' | 'headingMd' | 'bodyLg' | 'bodyMd' | 'label' | 'caption';
+export type TextVariant = 'display' | 'headingXl' | 'headingLg' | 'headingMd' | 'bodyLg' | 'bodyMd' | 'label' | 'caption';
 
-export type TextColor = 'primary' | 'secondary' | 'muted' | 'brand' | 'success' | 'warning' | 'error' | 'inverse';
+export type TextColor = 'primary' | 'secondary' | 'muted' | 'brand' | 'accent' | 'success' | 'warning' | 'error' | 'inverse';
 
 const colorMap: Record<TextColor, string> = {
   primary: colors.text.primary,
   secondary: colors.text.secondary,
   muted: colors.text.muted,
   brand: colors.brand.primary,
+  accent: colors.accent.opportunity,
   success: colors.semantic.success,
   warning: colors.semantic.warning,
   error: colors.semantic.error,

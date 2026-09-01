@@ -31,6 +31,7 @@ const VALID_SORT_OPTIONS = [
   "pay_low",
   "date_soon",
   "date_late",
+  "best_match",
 ];
 
 const VALID_COMPENSATION_TYPES = ["hourly", "fixed"];
@@ -406,6 +407,10 @@ const listJobsQueryValidation = [
     .optional()
     .isIn(VALID_SORT_OPTIONS)
     .withMessage("Invalid sort option"),
+  query("availableOnly")
+    .optional()
+    .isIn(["true", "false"])
+    .withMessage("availableOnly must be 'true' or 'false'"),
   validate,
 ];
 

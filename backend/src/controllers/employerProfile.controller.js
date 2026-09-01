@@ -1,4 +1,5 @@
 import { getEmployerProfile, createOrUpdateEmployerProfile } from "../services/employerProfile.service.js";
+import { getEmployerProfileCompletion } from "../services/profileCompletion.service.js";
 
 const handleError = (res, error) => {
   const statusCode = error.statusCode || 500;
@@ -12,11 +13,14 @@ const handleError = (res, error) => {
 export const getEmployerProfileController = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const profile = await getEmployerProfile(userId);
+    const [profile, completion] = await Promise.all([
+      getEmployerProfile(userId),
+      getEmployerProfileCompletion(userId),
+    ]);
     return res.json({
       success: true,
       message: "Employer profile retrieved successfully",
-      data: { profile },
+      data: { profile: { ...profile, completion } },
     });
   } catch (error) {
     return handleError(res, error);

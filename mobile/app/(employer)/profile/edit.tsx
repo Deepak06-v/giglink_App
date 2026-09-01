@@ -3,10 +3,19 @@ import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { DetailHeader } from '@/components/layout/DetailHeader';
 import { Screen } from '@/components/layout/Screen';
-import { Button, ErrorState, Input, Text } from '@/components/ui';
+import { Button, ErrorState, ImagePickerField, Input, Text } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { getEmployerProfile, updateEmployerProfile } from '@/lib/api/profiles';
+import { translate, type TranslationKey } from '@/lib/i18n';
+
+function SectionTitle({ value }: { value: TranslationKey }) {
+  return (
+    <Text variant="label" color="accent">
+      {translate(value)}
+    </Text>
+  );
+}
 
 export default function EditEmployerProfileScreen() {
   const router = useRouter();
@@ -38,7 +47,7 @@ export default function EditEmployerProfileScreen() {
       setState(profile.state ?? '');
       setPincode(profile.pincode ?? '');
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Unable to load profile'));
+      setError(getApiErrorMessage(err, translate('profile.unableLoadProfile')));
     } finally {
       setLoading(false);
     }
@@ -64,7 +73,7 @@ export default function EditEmployerProfileScreen() {
       });
       router.back();
     } catch (err) {
-      setSaveError(getApiErrorMessage(err, 'Unable to save profile'));
+      setSaveError(getApiErrorMessage(err, translate('profile.unableSaveProfile')));
     } finally {
       setSaving(false);
     }
@@ -73,9 +82,9 @@ export default function EditEmployerProfileScreen() {
   if (loading) {
     return (
       <Screen scroll keyboardAvoiding>
-        <DetailHeader title="Edit Profile" />
+        <DetailHeader title={translate('profile.editProfile')} />
         <Text variant="bodyMd" color="secondary">
-          Loading profile...
+          {translate('profile.loadingProfile')}
         </Text>
       </Screen>
     );
@@ -84,7 +93,7 @@ export default function EditEmployerProfileScreen() {
   if (error) {
     return (
       <Screen>
-        <DetailHeader title="Edit Profile" />
+        <DetailHeader title={translate('profile.editProfile')} />
         <ErrorState message={error} onRetry={() => void loadProfile()} />
       </Screen>
     );
@@ -102,7 +111,7 @@ export default function EditEmployerProfileScreen() {
             </Text>
           ) : null}
           <Button
-            label={saving ? 'Saving...' : 'Save Changes'}
+            label={saving ? translate('profile.saving') : translate('profile.saveChanges')}
             onPress={() => void handleSave()}
             loading={saving}
             fullWidth
@@ -111,36 +120,33 @@ export default function EditEmployerProfileScreen() {
       }
       contentContainerStyle={styles.content}
     >
-      <DetailHeader title="Edit Profile" />
+      <DetailHeader title={translate('profile.editProfile')} />
 
-      <Input label="Company name" value={companyName} onChangeText={setCompanyName} />
+      <SectionTitle value="profile.about" />
+      <ImagePickerField label={translate('profile.companyLogo')} value={logo} type="employer_logo" onChange={setLogo} />
+      <Input label={translate('profile.companyName')} value={companyName} onChangeText={setCompanyName} />
       <Input
-        label="Company description"
+        label={translate('profile.companyDescription')}
         value={companyDescription}
         onChangeText={setCompanyDescription}
         multiline
         numberOfLines={4}
-        placeholder="Tell workers about your company"
+        placeholder={translate('profile.companyDescriptionPlaceholder')}
       />
-      <Input label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-      <Input
-        label="Logo URL"
-        value={logo}
-        onChangeText={setLogo}
-        autoCapitalize="none"
-        placeholder="https://..."
-      />
-      <Input label="Address" value={address} onChangeText={setAddress} />
-      <Input label="City" value={city} onChangeText={setCity} />
-      <Input label="State" value={state} onChangeText={setState} />
-      <Input label="Pincode" value={pincode} onChangeText={setPincode} keyboardType="numeric" />
+
+      <SectionTitle value="profile.sections.contact" />
+      <Input label={translate('profile.phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+      <Input label={translate('profile.address')} value={address} onChangeText={setAddress} />
+      <Input label={translate('profile.city')} value={city} onChangeText={setCity} />
+      <Input label={translate('profile.state')} value={state} onChangeText={setState} />
+      <Input label={translate('profile.pincode')} value={pincode} onChangeText={setPincode} keyboardType="numeric" />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    gap: spacing.lg,
+    gap: spacing.md,
     paddingBottom: spacing['2xl'],
   },
   footer: {

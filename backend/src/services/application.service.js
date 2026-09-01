@@ -2,6 +2,7 @@ import Application from "../models/Application.js";
 import Job from "../models/Job.js";
 import Assignment from "../models/Assignment.js";
 import User from "../models/User.js";
+import WorkerProfile from "../models/WorkerProfile.js";
 import {
   notifyApplicationReceived,
   notifyApplicationAccepted,
@@ -9,6 +10,50 @@ import {
   notifyApplicationWithdrawn,
   notifyJobFilled,
 } from "./notification.service.js";
+import { getWorkerProfileCompletion } from "./profileCompletion.service.js";
+import { matchWorkerToJob } from "./availabilityMatching.service.js";
+
+/**
+ * Fetch the weekly availability of many workers at once, keyed by user id.
+ * Workers without a profile (or without a configured schedule) are excluded.
+ * @param {Array<string|import("mongoose").Types.ObjectId>} workerIds
+ * @returns {Promise<Map<string, Array>>} userId string -> weeklyAvailability
+ */
+const getWorkerAvailabilityMap = async (workerIds) => {
+  const map = new Map();
+  if (!workerIds.length) {
+    return map;
+  }
+  const profiles = await WorkerProfile.find({ user: { $in: workerIds } })
+    .select("user weeklyAvailability")
+    .lean();
+  for (const profile of profiles) {
+    if (profile.weeklyAvailability && profile.weeklyAvailability.length > 0) {
+      map.set(profile.user.toString(), profile.weeklyAvailability);
+    }
+  }
+  return map;
+};
+
+/**
+ * Attach a read-only `availabilityMatch` to each application, matching the
+ * worker's weekly availability against the job schedule. Workers without a
+ * configured schedule are left with `availabilityMatch: null`.
+ * @param {object[]} applications
+ * @param {object} job the already-loaded job (must carry `schedule`)
+ * @param {Map<string, Array>} availabilityByWorkerId
+ * @returns {object[]} same applications, enriched in place
+ */
+const enrichApplicationsWithAvailability = (applications, job, availabilityByWorkerId) => {
+  for (const application of applications) {
+    const workerId = application.worker?._id?.toString?.() || application.worker?.toString?.();
+    const availability = workerId ? availabilityByWorkerId.get(workerId) : undefined;
+    application.availabilityMatch = availability
+      ? matchWorkerToJob(job, availability)
+      : null;
+  }
+  return applications;
+};
 
 const applyToJob = async (jobId, workerId) => {
   const job = await Job.findById(jobId);
@@ -52,6 +97,19 @@ const applyToJob = async (jobId, workerId) => {
     const error = new Error("Job has reached the required number of workers");
     error.statusCode = 400;
     throw error;
+  }
+
+  const completion = await getWorkerProfileCompletion(workerId);
+  if (!completion.complete) {
+    const err = new Error("Complete your profile to apply");
+    err.statusCode = 400;
+    err.code = "PROFILE_INCOMPLETE";
+    err.data = {
+      percentage: completion.percentage,
+      role: "worker",
+      missingFields: completion.missingFields,
+    };
+    throw err;
   }
 
   const application = await Application.create({
@@ -157,7 +215,7 @@ const getEmployerApplicationsForJob = async (jobId, employerId, page = 1, limit 
   }
 
   const skip = (page - 1) * limit;
-  const [applications, total] = await Promise.all([
+  const [applications, total, availabilityByWorkerId] = await Promise.all([
     Application.find(filter)
       .sort({ appliedAt: -1 })
       .skip(skip)
@@ -167,7 +225,12 @@ const getEmployerApplicationsForJob = async (jobId, employerId, page = 1, limit 
         select: "name email",
       }),
     Application.countDocuments(filter),
+    Application.find(filter)
+      .distinct("worker")
+      .then((workerIds) => getWorkerAvailabilityMap(workerIds)),
   ]);
+
+  enrichApplicationsWithAvailability(applications, job, availabilityByWorkerId);
 
   return {
     applications,
@@ -181,7 +244,7 @@ const getEmployerApplicationsForJob = async (jobId, employerId, page = 1, limit 
 };
 
 const getEmployerAllApplications = async (employerId, page = 1, limit = 20, status = null) => {
-  const employerJobs = await Job.find({ employer: employerId }).select("_id");
+  const employerJobs = await Job.find({ employer: employerId }).select("_id schedule title");
   const jobIds = employerJobs.map((job) => job._id);
 
   const filter = { job: { $in: jobIds } };
@@ -190,7 +253,12 @@ const getEmployerAllApplications = async (employerId, page = 1, limit = 20, stat
   }
 
   const skip = (page - 1) * limit;
-  const [applications, total] = await Promise.all([
+  const scheduleMap = new Map();
+  for (const job of employerJobs) {
+    scheduleMap.set(job._id.toString(), job);
+  }
+
+  const [applications, total, availabilityByWorkerId] = await Promise.all([
     Application.find(filter)
       .sort({ appliedAt: -1 })
       .skip(skip)
@@ -204,7 +272,23 @@ const getEmployerAllApplications = async (employerId, page = 1, limit = 20, stat
         select: "title category",
       }),
     Application.countDocuments(filter),
+    Application.find(filter)
+      .distinct("worker")
+      .then((workerIds) => getWorkerAvailabilityMap(workerIds)),
   ]);
+
+  for (const application of applications) {
+    const jobForMatch = scheduleMap.get(application.job?._id?.toString?.());
+    if (jobForMatch) {
+      const workerId = application.worker?._id?.toString?.();
+      const availability = workerId ? availabilityByWorkerId.get(workerId) : undefined;
+      application.availabilityMatch = availability
+        ? matchWorkerToJob(jobForMatch, availability)
+        : null;
+    } else {
+      application.availabilityMatch = null;
+    }
+  }
 
   return {
     applications,
@@ -241,7 +325,21 @@ const getEmployerApplicationById = async (applicationId, employerId) => {
     throw error;
   }
 
-  return application;
+  const workerId = application.worker?._id?.toString?.();
+  let availabilityMatch = null;
+  if (workerId) {
+    const availability = await getWorkerAvailabilityMap([workerId]).then(
+      (map) => map.get(workerId)
+    );
+    availabilityMatch = availability
+      ? matchWorkerToJob(application.job, availability)
+      : null;
+  }
+
+  return {
+    ...application.toObject ? application.toObject() : { ...application },
+    availabilityMatch,
+  };
 };
 
 const acceptApplication = async (applicationId, employerId) => {

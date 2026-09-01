@@ -158,12 +158,6 @@ export default function EmployerMyJobsScreen() {
             <EmptyState
               title={t('myJobs.noJobsYet')}
               message={t('myJobs.postFirstJobMessage')}
-              action={
-                <Button
-                  label={t('myJobs.postFirstJob')}
-                  onPress={() => router.push(employerCreateJobRoute())}
-                />
-              }
             />
           )
         }

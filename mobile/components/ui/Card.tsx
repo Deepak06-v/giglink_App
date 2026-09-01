@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { StyleSheet, View } from 'react-native';
 
-import { colors, radius, spacing } from '@/constants/theme';
+import { colors, radius, shadows, spacing } from '@/constants/theme';
 
 export type CardVariant = 'default' | 'elevated';
 
@@ -32,5 +32,6 @@ const styles = StyleSheet.create({
   },
   elevated: {
     backgroundColor: colors.surface.elevated,
+    ...shadows.elevated,
   },
 });

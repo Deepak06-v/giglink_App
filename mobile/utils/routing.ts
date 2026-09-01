@@ -70,3 +70,27 @@ export function employerNotificationsRoute(): Href {
 export function employerEditProfileRoute(): Href {
   return '/(employer)/profile/edit';
 }
+
+export function employerMarketplaceProfileRoute(userId: string): Href {
+  return { pathname: '/(employer)/profile/[userId]', params: { userId } };
+}
+
+export function workerMarketplaceProfileRoute(userId: string): Href {
+  return { pathname: '/(worker)/profile/[userId]', params: { userId } };
+}
+
+export function workerEditProfileRoute(): Href {
+  return '/(worker)/profile/edit';
+}
+
+export function workerAvailabilityRoute(): Href {
+  return '/(worker)/profile/availability';
+}
+
+export function workerApplicationsTabRoute(): Href {
+  return '/(worker)/(tabs)/applications';
+}
+
+export function workerAssignmentsTabRoute(): Href {
+  return '/(worker)/(tabs)/assignments';
+}

@@ -21,6 +21,8 @@ export type {
   Assignment,
   AssignmentCompletion,
   AssignmentStatus,
+  AvailabilityMatch,
+  AvailabilityMatchStatus,
   Compensation,
   CompensationType,
   Job,
@@ -37,8 +39,19 @@ export type {
   JobStatus,
   PaginatedResponse,
   Pagination,
+  ProfileCompletion,
+  TrustSummary,
+  WeekdayIndex,
+  WeeklyAvailabilityWindow,
+  WorkerMarketplaceProfile,
+  EmployerMarketplaceProfile,
   WorkerProfile,
   EmployerProfile,
   Notification,
   NotificationType,
 } from './jobs';
+
+export type {
+  UploadAssetType,
+  UploadAuthorization,
+} from './upload';

@@ -13,10 +13,17 @@ import {
 const handleError = (res, error) => {
   const statusCode = error.statusCode || 500;
   const message = error.message || "Internal server error";
-  return res.status(statusCode).json({
+  const body = {
     success: false,
     message,
-  });
+  };
+  if (error.code) {
+    body.code = error.code;
+  }
+  if (error.data) {
+    body.data = error.data;
+  }
+  return res.status(statusCode).json(body);
 };
 
 export const applyToJobController = async (req, res) => {

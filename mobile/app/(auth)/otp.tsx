@@ -10,7 +10,8 @@ import * as authApi from '@/lib/api/auth';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { useAuthStore } from '@/store/authStore';
 import type { UserRole } from '@/types';
-import { getRoleHomeRoute, resolvePendingIntentRoute } from '@/utils/routing';
+import { resolvePendingIntentRoute } from '@/utils/routing';
+import { resolvePostAuthRoute } from '@/utils/onboarding';
 import { useTranslation, translate } from '@/lib/i18n';
 
 const RESEND_COOLDOWN_SECONDS = 30;
@@ -60,7 +61,7 @@ export default function OtpScreen() {
           return;
         }
       }
-      router.replace(getRoleHomeRoute(user.role));
+      router.replace(await resolvePostAuthRoute(user));
     } catch {
       // Error state is handled in the store.
       setVerifying(false);

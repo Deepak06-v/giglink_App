@@ -18,6 +18,8 @@ import workerReviewRoutes from "./routes/workerReview.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import deviceRoutes from "./routes/device.routes.js";
 import locationRoutes from "./routes/location.routes.js";
+import uploadRoutes from "./routes/upload.routes.js";
+import marketplaceRoutes from "./routes/marketplace.routes.js";
 
 import { errorHandler, notFound } from "./middleware/error.middleware.js";
 import { normalizePhone } from "./utils/phone.js";
@@ -205,6 +207,18 @@ app.use("/api/employer", employerReviewRoutes);
 app.use("/api/notifications/devices", deviceRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/location", locationRoutes);
+// ======================================================
+// Profile media uploads (shared worker + employer)
+// ======================================================
+
+app.use("/api/profile", uploadRoutes);
+
+// ======================================================
+// Marketplace profiles (public other-user view)
+// ======================================================
+
+app.use("/api/marketplace", marketplaceRoutes);
+
 // ======================================================
 // Applications & Users
 // ======================================================

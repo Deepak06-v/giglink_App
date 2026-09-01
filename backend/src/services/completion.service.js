@@ -184,7 +184,15 @@ const employerCompleteJob = async (jobId, employerId) => {
   };
 };
 
-const getCompletionStatus = async (jobId) => {
+const getCompletionStatus = async (jobId, requester = null) => {
+  if (!requester) {
+    // No authenticated caller: reflect a generic 404 rather than revealing
+    // that the job exists. Completion state is sensitive operational data.
+    const error = new Error("Job not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
   const job = await Job.findById(jobId);
   if (!job) {
     const error = new Error("Job not found");
@@ -193,6 +201,18 @@ const getCompletionStatus = async (jobId) => {
   }
 
   const activeAssignments = await Assignment.find({ job: jobId, status: "ACTIVE" });
+
+  const isEmployer = job.employer?.toString() === requester;
+  const isAssignedWorker = activeAssignments.some(
+    (a) => a.worker?.toString?.() === requester
+  );
+  if (!isEmployer && !isAssignedWorker) {
+    // Authorized only for the job's employer or an assigned worker.
+    const error = new Error("Job not found");
+    error.statusCode = 404;
+    throw error;
+  }
+
   const workersCompleted = activeAssignments.filter((a) => a.workerCompleted).length;
   const workersRequired = job.workersRequired;
   const employerCompleted = job.completion?.employerCompleted || false;

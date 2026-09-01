@@ -15,7 +15,8 @@ import { getGoogleIdToken } from '@/lib/googleSignIn';
 import { translate, useTranslation } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
 import type { UserRole } from '@/types';
-import { getRoleHomeRoute, resolvePendingIntentRoute } from '@/utils/routing';
+import { resolvePendingIntentRoute } from '@/utils/routing';
+import { resolvePostAuthRoute } from '@/utils/onboarding';
 
 export default function LoginScreen() {
   const { t } = useTranslation();
@@ -44,7 +45,7 @@ export default function LoginScreen() {
         }
       }
       if (user) {
-        router.replace(getRoleHomeRoute(user.role));
+        router.replace(await resolvePostAuthRoute(user));
       }
     } catch {
       // Error state is handled in the store.
@@ -69,7 +70,7 @@ export default function LoginScreen() {
           return;
         }
       }
-      router.replace(getRoleHomeRoute(user.role));
+      router.replace(await resolvePostAuthRoute(user));
     } catch (err) {
       let message = translate('auth.unableGoogle');
       if (isErrorWithCode(err)) {

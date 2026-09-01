@@ -64,4 +64,14 @@ export interface ApiErrorResponse {
   success: false;
   message: string;
   errors?: Array<{ msg: string; path?: string }>;
+  code?: string;
+  data?: ProfileCompletionInfo;
 }
+
+export interface ProfileCompletionInfo {
+  percentage: number;
+  role: 'worker' | 'employer';
+  missingFields: string[];
+}
+
+export const PROFILE_INCOMPLETE_CODE = 'PROFILE_INCOMPLETE';

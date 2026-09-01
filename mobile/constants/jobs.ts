@@ -15,6 +15,7 @@ export const JOB_CATEGORIES: Array<{ value: JobCategory; labelKey: TranslationKe
 
 export const JOB_SORT_OPTIONS: Array<{ value: JobSortOption; labelKey: TranslationKey }> = [
   { value: 'newest', labelKey: 'sort.newest' },
+  { value: 'best_match', labelKey: 'sort.bestMatch' },
   { value: 'oldest', labelKey: 'sort.oldest' },
   { value: 'pay_high', labelKey: 'sort.payHigh' },
   { value: 'pay_low', labelKey: 'sort.payLow' },

@@ -18,6 +18,8 @@ export default function WorkerLayout() {
         <Stack.Screen name="applications/[applicationId]" />
         <Stack.Screen name="assignments/[assignmentId]" />
         <Stack.Screen name="profile/edit" />
+        <Stack.Screen name="profile/availability" />
+        <Stack.Screen name="profile/[userId]" />
       </Stack>
     </WorkerGroupGuard>
   );

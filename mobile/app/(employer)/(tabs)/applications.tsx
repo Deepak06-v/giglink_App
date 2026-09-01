@@ -11,8 +11,8 @@ import { colors, radius, spacing } from '@/constants/theme';
 import { useTranslation } from '@/lib/i18n';
 import { getEmployerAllApplications, getEmployerApplicationsForJob } from '@/lib/api/applications';
 import { getApiErrorMessage } from '@/lib/api/errors';
-import type { Application, ApplicationStatus } from '@/types';
-import { employerApplicationDetailsRoute } from '@/utils/routing';
+import type { Application, ApplicationStatus, ApplicationWorker } from '@/types';
+import { employerApplicationDetailsRoute, employerMarketplaceProfileRoute } from '@/utils/routing';
 
 type StatusFilter = (typeof APPLICATION_STATUS_FILTERS)[number]['value'];
 
@@ -146,12 +146,21 @@ export default function EmployerApplicationsScreen() {
       <FlatList
         data={applications}
         keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
-          <EmployerApplicationCard
-            application={item}
-            onPress={() => router.push(employerApplicationDetailsRoute(item._id))}
-          />
-        )}
+        renderItem={({ item }) => {
+          const workerId =
+            typeof item.worker === 'string' ? undefined : (item.worker as ApplicationWorker)._id;
+          return (
+            <EmployerApplicationCard
+              application={item}
+              onPress={() => router.push(employerApplicationDetailsRoute(item._id))}
+              onViewProfile={
+                workerId
+                  ? () => router.push(employerMarketplaceProfileRoute(workerId))
+                  : undefined
+              }
+            />
+          );
+        }}
         ListHeaderComponent={listHeader}
         ListEmptyComponent={
           loading ? (

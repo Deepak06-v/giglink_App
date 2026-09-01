@@ -10,13 +10,16 @@ import { colors, spacing } from '@/constants/theme';
 import { getApplicationById, withdrawApplication } from '@/lib/api/applications';
 import { getAssignments } from '@/lib/api/assignments';
 import { getApiErrorMessage } from '@/lib/api/errors';
+import { useTranslation } from '@/lib/i18n';
 import type { Application, Assignment } from '@/types';
 import {
+  formatAppliedDate,
   formatCompensation,
   formatDuration,
   formatScheduleRange,
   formatTimeRange,
   getEmployerName,
+  getStatusLabel,
 } from '@/utils/formatJob';
 import { openInMaps } from '@/utils/maps';
 import { assignmentDetailsRoute } from '@/utils/routing';
@@ -35,6 +38,7 @@ function statusVariant(status: Application['status']): 'warning' | 'success' | '
 }
 
 export default function ApplicationDetailsScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { applicationId } = useLocalSearchParams<{ applicationId: string }>();
 
@@ -63,11 +67,11 @@ export default function ApplicationDetailsScreen() {
         setAssignment(match ?? null);
       }
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Unable to load application'));
+      setError(getApiErrorMessage(err, t('application.unableLoadApplication')));
     } finally {
       setLoading(false);
     }
-  }, [applicationId]);
+  }, [applicationId, t]);
 
   useEffect(() => {
     void loadApplication();
@@ -91,7 +95,7 @@ export default function ApplicationDetailsScreen() {
       setApplication(updated);
       setConfirming(false);
     } catch (err) {
-      setWithdrawError(getApiErrorMessage(err, 'Please try again.'));
+      setWithdrawError(getApiErrorMessage(err, t('application.pleaseTryAgain')));
     } finally {
       setWithdrawing(false);
     }
@@ -100,7 +104,7 @@ export default function ApplicationDetailsScreen() {
   if (loading) {
     return (
       <Screen scroll>
-        <DetailHeader title="Application" />
+        <DetailHeader title={t('application.title')} />
         <View style={styles.skeleton} />
         <View style={styles.skeleton} />
       </Screen>
@@ -110,8 +114,11 @@ export default function ApplicationDetailsScreen() {
   if (error || !application || typeof application.job === 'string') {
     return (
       <Screen>
-        <DetailHeader title="Application" />
-        <ErrorState message={error ?? 'Application not found'} onRetry={() => void loadApplication()} />
+        <DetailHeader title={t('application.title')} />
+        <ErrorState
+          message={error ?? t('application.notFound')}
+          onRetry={() => void loadApplication()}
+        />
       </Screen>
     );
   }
@@ -132,7 +139,7 @@ export default function ApplicationDetailsScreen() {
               </Text>
             ) : null}
             <Button
-              label={withdrawing ? 'Withdrawing...' : 'Withdraw Application'}
+              label={withdrawing ? t('application.withdrawing') : t('application.withdrawApplication')}
               variant="destructive"
               onPress={handleWithdraw}
               loading={withdrawing}
@@ -141,7 +148,7 @@ export default function ApplicationDetailsScreen() {
           </>
         ) : assignment ? (
           <Button
-            label="View Assignment"
+            label={t('application.viewAssignment')}
             onPress={() => router.push(assignmentDetailsRoute(assignment._id))}
             fullWidth
           />
@@ -149,7 +156,7 @@ export default function ApplicationDetailsScreen() {
       }
       contentContainerStyle={styles.content}
     >
-      <DetailHeader title="Application" subtitle={job.title} />
+      <DetailHeader title={t('application.title')} subtitle={job.title} />
 
       <View style={styles.titleBlock}>
         <Text variant="headingLg" color="primary">
@@ -158,15 +165,15 @@ export default function ApplicationDetailsScreen() {
         <Text variant="bodyMd" color="secondary">
           {getEmployerName(job.employer)}
         </Text>
-        <Badge label={application.status} variant={statusVariant(application.status)} />
+        <Badge label={getStatusLabel(application.status)} variant={statusVariant(application.status)} />
         <Text variant="caption" color="muted">
-          Applied {new Date(application.appliedAt).toLocaleDateString('en-IN')}
+          {t('application.appliedOn', { date: formatAppliedDate(application.appliedAt) })}
         </Text>
       </View>
 
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
-          Compensation
+          {t('job.compensation')}
         </Text>
         <Text variant="headingMd" color="primary">
           {formatCompensation(job.compensation)}
@@ -175,7 +182,7 @@ export default function ApplicationDetailsScreen() {
 
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
-          Schedule
+          {t('job.schedule')}
         </Text>
         <Text variant="bodyMd" color="primary">
           {formatScheduleRange(job.schedule)}
@@ -192,7 +199,7 @@ export default function ApplicationDetailsScreen() {
 
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
-          Location
+          {t('job.location')}
         </Text>
         <View style={styles.locationRow}>
           <MapPin size={16} color={colors.text.muted} />
@@ -204,7 +211,7 @@ export default function ApplicationDetailsScreen() {
           <>
             <JobMapPreview latitude={latitude!} longitude={longitude!} />
             <Button
-              label="Open in Maps"
+              label={t('common.openInMaps')}
               variant="secondary"
               onPress={() =>
                 void openInMaps({
@@ -214,7 +221,7 @@ export default function ApplicationDetailsScreen() {
                   city: job.location.city,
                 })
               }
-              accessibilityLabel="Open job location in maps"
+              accessibilityLabel={t('common.openMapsAccessibility')}
             />
           </>
         )}
@@ -222,9 +229,9 @@ export default function ApplicationDetailsScreen() {
 
       <ConfirmDialog
         visible={confirming}
-        title="Withdraw application?"
-        message="You can apply again later if the job is still open."
-        confirmLabel="Withdraw"
+        title={t('application.withdrawTitle')}
+        message={t('application.withdrawMessage')}
+        confirmLabel={t('application.withdraw')}
         destructive
         loading={withdrawing}
         onConfirm={() => void confirmWithdraw()}

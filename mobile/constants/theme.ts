@@ -22,8 +22,16 @@ export const colors = {
     inverse: '#FFFFFF',
   },
   brand: {
-    primary: '#3B82F6',
-    primaryPressed: '#2563EB',
+    primary: '#4C8DFF',
+    primaryPressed: '#3B82F6',
+    tint: 'rgba(76, 141, 255, 0.14)',
+  },
+  accent: {
+    opportunity: '#F5B942',
+    tint: 'rgba(245, 185, 66, 0.14)',
+  },
+  overlay: {
+    default: 'rgba(0, 0, 0, 0.6)',
   },
   semantic: {
     success: '#22C55E',
@@ -34,7 +42,7 @@ export const colors = {
     success: 'rgba(34, 197, 94, 0.12)',
     warning: 'rgba(245, 158, 11, 0.12)',
     error: 'rgba(239, 68, 68, 0.12)',
-    brand: 'rgba(59, 130, 246, 0.12)',
+    brand: 'rgba(76, 141, 255, 0.14)',
   },
 } as const;
 
@@ -57,6 +65,11 @@ export const radius = {
 } as const;
 
 export const typography = {
+  display: {
+    fontSize: 34,
+    lineHeight: 40,
+    fontFamily: 'Inter_700Bold',
+  },
   headingXl: {
     fontSize: 28,
     lineHeight: 34,

@@ -131,6 +131,17 @@ export function JobBrowseScreen({ header, onJobPress }: JobBrowseScreenProps) {
 
   const quickFilters = [
     {
+      key: 'availableOnly',
+      label: t('home.availableOnly'),
+      active: appliedFilters.availableOnly === true,
+      onPress: () => {
+        setAppliedFilters((current) => ({
+          ...current,
+          availableOnly: current.availableOnly ? undefined : true,
+        }));
+      },
+    },
+    {
       key: 'today',
       label: t('home.today'),
       active: appliedFilters.date === toIsoDateOnly(new Date()),
@@ -227,6 +238,11 @@ export function JobBrowseScreen({ header, onJobPress }: JobBrowseScreenProps) {
       <Text variant="headingMd" color="primary" style={styles.sectionTitle}>
         {t('home.availableGigs')}
       </Text>
+      {appliedFilters.availableOnly ? (
+        <Text variant="caption" color="secondary" style={styles.availableOnlyHint}>
+          {t('home.availableOnlyActiveHint')}
+        </Text>
+      ) : null}
     </View>
   );
 
@@ -345,6 +361,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.semanticTint.brand,
   },
   sectionTitle: {
+    marginBottom: spacing.md,
+  },
+  availableOnlyHint: {
     marginBottom: spacing.md,
   },
   separator: {

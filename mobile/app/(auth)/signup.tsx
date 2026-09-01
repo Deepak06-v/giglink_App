@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useTranslation } from '@/lib/i18n';
 import type { UserRole } from '@/types';
 import { getRoleHomeRoute, resolvePendingIntentRoute } from '@/utils/routing';
+import { resolvePostAuthRoute } from '@/utils/onboarding';
 
 export default function SignupScreen() {
   const { t } = useTranslation();
@@ -42,7 +43,7 @@ export default function SignupScreen() {
         }
       }
       if (user) {
-        router.replace(getRoleHomeRoute(user.role));
+        router.replace(await resolvePostAuthRoute(user));
       }
     } catch {
       // Error state is handled in the store.

@@ -27,9 +27,11 @@ export {
   Search,
   Send,
   Star,
+  SearchX,
   Trash2,
   TrendingUp,
   User,
+  UserRound,
   Users,
   XCircle,
 } from 'lucide-react-native';

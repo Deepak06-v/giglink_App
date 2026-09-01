@@ -18,7 +18,7 @@ const router = express.Router();
 
 router.get("/", optionalAuthenticate, listJobsQueryValidation, getJobsController);
 router.get("/:jobId", optionalAuthenticate, getJobByIdValidation, getJobByIdController);
-router.get("/:jobId/completion-status", getJobCompletionStatusController);
+router.get("/:jobId/completion-status", optionalAuthenticate, getJobCompletionStatusController);
 
 router.post("/", authenticate, authorizeRoles("employer"), createJobValidation, createJobController);
 router.get("/employer/jobs", authenticate, authorizeRoles("employer"), getEmployerJobsController);

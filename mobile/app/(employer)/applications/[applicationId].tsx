@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Mail, MapPin, User } from '@/components/icons';
 import { JobMapPreview } from '@/components/maps/JobMapPreview';
 import { DetailHeader } from '@/components/layout/DetailHeader';
@@ -16,8 +16,11 @@ import {
   formatScheduleRange,
   formatTimeRange,
   getCategoryLabel,
+  getStatusLabel,
 } from '@/utils/formatJob';
+import { useTranslation, translate } from '@/lib/i18n';
 import { openInMaps } from '@/utils/maps';
+import { employerMarketplaceProfileRoute } from '@/utils/routing';
 
 function statusVariant(status: ApplicationStatus): BadgeVariant {
   switch (status) {
@@ -33,7 +36,7 @@ function statusVariant(status: ApplicationStatus): BadgeVariant {
 }
 
 function workerName(worker: string | ApplicationWorker): string {
-  return typeof worker === 'string' ? 'Worker' : worker.name || 'Worker';
+  return typeof worker === 'string' ? translate('common.worker') : worker.name || translate('common.worker');
 }
 
 function workerEmail(worker: string | ApplicationWorker): string | null {
@@ -41,6 +44,8 @@ function workerEmail(worker: string | ApplicationWorker): string | null {
 }
 
 export default function EmployerApplicationDetailsScreen() {
+  const router = useRouter();
+  const { t } = useTranslation();
   const { applicationId } = useLocalSearchParams<{ applicationId: string }>();
 
   const [application, setApplication] = useState<Application | null>(null);
@@ -62,11 +67,11 @@ export default function EmployerApplicationDetailsScreen() {
       const data = await getEmployerApplicationById(applicationId);
       setApplication(data);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Unable to load application'));
+      setError(getApiErrorMessage(err, t('application.unableLoadApplication')));
     } finally {
       setLoading(false);
     }
-  }, [applicationId]);
+  }, [applicationId, t]);
 
   useEffect(() => {
     void loadApplication();
@@ -91,16 +96,16 @@ export default function EmployerApplicationDetailsScreen() {
           await loadApplication();
           setFeedback(
             result.assignment
-              ? 'Application accepted and assignment created.'
-              : 'Application accepted and worker assigned.',
+              ? t('application.acceptedAndAssignment')
+              : t('application.acceptedAndAssigned'),
           );
         } else {
           await rejectApplication(applicationId);
           await loadApplication();
-          setFeedback('Application rejected.');
+          setFeedback(t('application.applicationRejected'));
         }
       } catch (err) {
-        setActionError(getApiErrorMessage(err, 'Please try again.'));
+        setActionError(getApiErrorMessage(err, t('application.pleaseTryAgain')));
       } finally {
         setAccepting(false);
         setRejecting(false);
@@ -132,7 +137,7 @@ export default function EmployerApplicationDetailsScreen() {
     return (
       <Screen>
         <DetailHeader title="Application" />
-        <ErrorState message={error ?? 'Application not found'} onRetry={() => void loadApplication()} />
+        <ErrorState message={error ?? t('application.notFound')} onRetry={() => void loadApplication()} />
       </Screen>
     );
   }
@@ -140,6 +145,8 @@ export default function EmployerApplicationDetailsScreen() {
   const job = application.job;
   const canReview = application.status === 'PENDING';
   const email = workerEmail(application.worker);
+  const workerId =
+    typeof application.worker === 'string' ? undefined : application.worker._id;
   const { latitude, longitude } = job.location.coordinates || {};
   const hasCoordinates = latitude !== undefined && longitude !== undefined;
 
@@ -159,14 +166,14 @@ export default function EmployerApplicationDetailsScreen() {
         {canReview ? (
           <>
             <Button
-              label={accepting ? 'Accepting...' : 'Accept Application'}
+              label={accepting ? t('application.accepting') : t('application.acceptApplication')}
               onPress={handleAccept}
               loading={accepting}
               disabled={rejecting}
               fullWidth
             />
             <Button
-              label={rejecting ? 'Rejecting...' : 'Reject Application'}
+              label={rejecting ? t('application.rejecting') : t('application.rejectApplication')}
               variant="destructive"
               onPress={handleReject}
               loading={rejecting}
@@ -180,13 +187,13 @@ export default function EmployerApplicationDetailsScreen() {
 
   return (
     <Screen scroll footer={footer} contentContainerStyle={styles.content}>
-      <DetailHeader title="Application" subtitle={job.title} />
+      <DetailHeader title={t('application.title')} subtitle={job.title} />
 
       <View style={styles.titleBlock}>
         <Text variant="headingXl" color="primary">
           {workerName(application.worker)}
         </Text>
-        <Badge label={application.status} variant={statusVariant(application.status)} />
+        <Badge label={getStatusLabel(application.status)} variant={statusVariant(application.status)} />
         <Text variant="caption" color="muted">
           Applied {new Date(application.appliedAt).toLocaleDateString('en-IN')}
         </Text>
@@ -194,7 +201,7 @@ export default function EmployerApplicationDetailsScreen() {
 
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
-          Worker contact
+          {t('application.workerContact')}
         </Text>
         <View style={styles.infoRow}>
           <User size={16} color={colors.text.muted} />
@@ -212,9 +219,18 @@ export default function EmployerApplicationDetailsScreen() {
         ) : null}
       </Card>
 
+      {workerId ? (
+        <Button
+          label={t('application.viewWorkerProfile')}
+          variant="secondary"
+          onPress={() => router.push(employerMarketplaceProfileRoute(workerId))}
+          fullWidth
+        />
+      ) : null}
+
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
-          Job
+          {t('application.job')}
         </Text>
         <Text variant="headingMd" color="primary">
           {job.title}
@@ -226,7 +242,7 @@ export default function EmployerApplicationDetailsScreen() {
 
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
-          Compensation
+          {t('job.compensation')}
         </Text>
         <Text variant="headingMd" color="primary">
           {formatCompensation(job.compensation)}
@@ -235,7 +251,7 @@ export default function EmployerApplicationDetailsScreen() {
 
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
-          Schedule
+          {t('job.schedule')}
         </Text>
         <Text variant="bodyMd" color="primary">
           {formatScheduleRange(job.schedule)}
@@ -247,7 +263,7 @@ export default function EmployerApplicationDetailsScreen() {
 
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
-          Location
+          {t('job.location')}
         </Text>
         <View style={styles.infoRow}>
           <MapPin size={16} color={colors.text.muted} />
@@ -259,7 +275,7 @@ export default function EmployerApplicationDetailsScreen() {
           <>
             <JobMapPreview latitude={latitude!} longitude={longitude!} />
             <Button
-              label="Open in Maps"
+              label={t('common.openInMaps')}
               variant="secondary"
               onPress={() =>
                 void openInMaps({
@@ -269,7 +285,7 @@ export default function EmployerApplicationDetailsScreen() {
                   city: job.location.city,
                 })
               }
-              accessibilityLabel="Open job location in maps"
+              accessibilityLabel={t('common.openMapsAccessibility')}
             />
           </>
         )}
@@ -277,13 +293,13 @@ export default function EmployerApplicationDetailsScreen() {
 
       <ConfirmDialog
         visible={confirmAction !== null}
-        title={confirmAction === 'accept' ? 'Accept application?' : 'Reject application?'}
+        title={confirmAction === 'accept' ? t('application.acceptTitle') : t('application.rejectTitle')}
         message={
           confirmAction === 'accept'
-            ? 'This will create an assignment for the worker.'
-            : 'The worker will be notified.'
+            ? t('application.acceptMessage')
+            : t('application.rejectMessage')
         }
-        confirmLabel={confirmAction === 'accept' ? 'Accept' : 'Reject'}
+        confirmLabel={confirmAction === 'accept' ? t('application.accept') : t('application.reject')}
         destructive={confirmAction === 'reject'}
         loading={accepting || rejecting}
         onConfirm={handleConfirm}

@@ -7,6 +7,7 @@ import type { BadgeVariant } from '@/components/ui/Badge';
 import type { Application, ApplicationStatus, ApplicationWorker } from '@/types';
 import { formatAppliedDate, getStatusLabel } from '@/utils/formatJob';
 import { translate } from '@/lib/i18n';
+import { availabilityMatchBadge } from '@/utils/availabilityMatch';
 
 function statusVariant(status: ApplicationStatus): BadgeVariant {
   switch (status) {
@@ -35,15 +36,25 @@ function getWorkerEmail(worker: string | ApplicationWorker): string | null {
   return worker.email ?? null;
 }
 
+function getWorkerId(worker: string | ApplicationWorker): string | null {
+  if (typeof worker === 'string') {
+    return null;
+  }
+  return worker._id ?? null;
+}
+
 interface EmployerApplicationCardProps {
   application: Application;
   onPress: () => void;
+  onViewProfile?: () => void;
 }
 
-export function EmployerApplicationCard({ application, onPress }: EmployerApplicationCardProps) {
+export function EmployerApplicationCard({ application, onPress, onViewProfile }: EmployerApplicationCardProps) {
   const { t } = useTranslation();
   const job = typeof application.job === 'string' ? null : application.job;
   const email = getWorkerEmail(application.worker);
+  const workerId = getWorkerId(application.worker);
+  const matchBadge = availabilityMatchBadge(application.availabilityMatch);
 
   return (
     <Pressable onPress={onPress} accessibilityRole="button">
@@ -67,14 +78,28 @@ export function EmployerApplicationCard({ application, onPress }: EmployerApplic
               </Text>
             ) : null}
           </View>
-          <Badge label={getStatusLabel(application.status)} variant={statusVariant(application.status)} />
+          <View style={styles.badgesCol}>
+            {matchBadge ? <Badge label={t(matchBadge.labelKey)} variant={matchBadge.variant} /> : null}
+            <Badge label={getStatusLabel(application.status)} variant={statusVariant(application.status)} />
+          </View>
         </View>
 
         <View style={styles.footerRow}>
           <Text variant="caption" color="muted">
             {t('application.appliedOn', { date: formatAppliedDate(application.appliedAt) })}
           </Text>
-          <ChevronRight size={16} color={colors.brand.primary} />
+          {onViewProfile && workerId ? (
+            <Pressable onPress={onViewProfile} accessibilityRole="button" accessibilityLabel="View worker profile">
+              <View style={styles.viewProfileRow}>
+                <Text variant="label" color="brand">
+                  View Profile
+                </Text>
+                <ChevronRight size={16} color={colors.brand.primary} />
+              </View>
+            </Pressable>
+          ) : (
+            <ChevronRight size={16} color={colors.brand.primary} />
+          )}
         </View>
       </Card>
     </Pressable>
@@ -102,10 +127,19 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.xs,
   },
+  badgesCol: {
+    alignItems: 'flex-end',
+    gap: spacing.xs,
+  },
   footerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: spacing.xs,
+  },
+  viewProfileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
 });

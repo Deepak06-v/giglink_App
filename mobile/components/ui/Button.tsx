@@ -41,6 +41,7 @@ export function Button({
         sizeStyles[size],
         variantStyles[variant],
         fullWidth && styles.fullWidth,
+        pressed && !isDisabled && { backgroundColor: pressedBgMap[variant] },
         pressed && !isDisabled && styles.pressed,
         isDisabled && styles.disabled,
         style,
@@ -72,10 +73,17 @@ const labelColorMap: Record<ButtonVariant, 'inverse' | 'primary' | 'brand' | 'er
   ghost: 'brand',
 };
 
+const pressedBgMap: Record<ButtonVariant, string | undefined> = {
+  primary: colors.brand.primaryPressed,
+  secondary: colors.surface.higher,
+  destructive: colors.semanticTint.error,
+  ghost: colors.semanticTint.brand,
+};
+
 const styles = StyleSheet.create({
   base: {
     minHeight: sizes.buttonHeight,
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,

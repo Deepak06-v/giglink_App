@@ -1,32 +1,34 @@
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MapPin, Users } from '@/components/icons';
-import {
-  employerJobStatusLabel,
-  employerJobStatusVariant,
-} from '@/components/cards/EmployerJobCard';
+import { employerJobStatusVariant } from '@/components/cards/EmployerJobCard';
 import { JobMapPreview } from '@/components/maps/JobMapPreview';
 import { DetailHeader } from '@/components/layout/DetailHeader';
 import { Screen } from '@/components/layout/Screen';
-import { Badge, Button, Card, ConfirmDialog, ErrorState, Text } from '@/components/ui';
-import { colors, spacing } from '@/constants/theme';
-import { getApiErrorMessage } from '@/lib/api/errors';
+import { Badge, Button, Card, CompletionRing, ConfirmDialog, ErrorState, Text } from '@/components/ui';
+import { colors, radius, spacing } from '@/constants/theme';
+import { getApiErrorMessage, getProfileCompletionInfo } from '@/lib/api/errors';
 import { completeJobEmployer, deleteJob, getEmployerJobById, updateJob } from '@/lib/api/jobs';
 import type { JobCompletionInfo } from '@/lib/api/jobs';
+import { getEmployerProfile } from '@/lib/api/profiles';
 import type { Job } from '@/types';
+import type { ProfileCompletionInfo } from '@/types/auth';
 import {
   formatCompensation,
   formatDuration,
   formatScheduleRange,
   formatTimeRange,
   getCategoryLabel,
+  getStatusLabel,
 } from '@/utils/formatJob';
+import { useTranslation } from '@/lib/i18n';
 import { openInMaps } from '@/utils/maps';
-import { employerEditJobRoute } from '@/utils/routing';
+import { employerEditJobRoute, employerEditProfileRoute } from '@/utils/routing';
 
 export default function EmployerJobDetailsScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { jobId } = useLocalSearchParams<{ jobId: string }>();
 
   const [job, setJob] = useState<Job | null>(null);
@@ -36,6 +38,8 @@ export default function EmployerJobDetailsScreen() {
   const [confirmAction, setConfirmAction] = useState<'cancel' | 'delete' | 'complete' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [incompleteProfile, setIncompleteProfile] = useState<ProfileCompletionInfo | null>(null);
+  const [employerPercent, setEmployerPercent] = useState<number | null>(null);
 
   const loadJob = useCallback(async () => {
     if (!jobId) {
@@ -48,15 +52,37 @@ export default function EmployerJobDetailsScreen() {
       setJob(data.job);
       setCompletion(data.completion);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Unable to load job'));
+      setError(getApiErrorMessage(err, t('job.unableLoadDetails')));
     } finally {
       setLoading(false);
     }
-  }, [jobId]);
+  }, [jobId, t]);
 
   useEffect(() => {
     void loadJob();
   }, [loadJob]);
+
+  useEffect(() => {
+    if (job?.status !== 'DRAFT') {
+      return;
+    }
+    let active = true;
+    void getEmployerProfile()
+      .then((profile) => {
+        if (active) {
+          setEmployerPercent(profile.completion?.percentage ?? null);
+        }
+      })
+      .catch(() => {
+        // Optional fetch — a failure never blocks publishing.
+        if (active) {
+          setEmployerPercent(null);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [job?.status]);
 
   const runMutation = async (action: () => Promise<void>, errorMessage: string) => {
     setMutating(true);
@@ -74,10 +100,19 @@ export default function EmployerJobDetailsScreen() {
     if (!jobId) {
       return;
     }
-    void runMutation(async () => {
-      await updateJob(jobId, { status: 'OPEN' });
-      await loadJob();
-    }, 'Unable to publish job');
+    setMutating(true);
+    setActionError(null);
+    updateJob(jobId, { status: 'OPEN' })
+      .then(() => loadJob())
+      .catch((err: unknown) => {
+        const info = getProfileCompletionInfo(err);
+        if (info) {
+          setIncompleteProfile(info);
+          return;
+        }
+        setActionError(getApiErrorMessage(err, t('job.unablePublishJob')));
+      })
+      .finally(() => setMutating(false));
   };
 
   const handleCancel = () => {
@@ -102,17 +137,17 @@ export default function EmployerJobDetailsScreen() {
       void runMutation(async () => {
         await updateJob(jobId, { status: 'CANCELLED' });
         await loadJob();
-      }, 'Unable to cancel job');
+      }, t('job.unableCancelJob'));
     } else if (action === 'delete') {
       void runMutation(async () => {
         await deleteJob(jobId);
         router.back();
-      }, 'Unable to delete job');
+      }, t('job.unableDeleteJob'));
     } else {
       void runMutation(async () => {
         await completeJobEmployer(jobId);
         await loadJob();
-      }, 'Unable to confirm completion');
+      }, t('job.unableConfirmCompletion'));
     }
   };
 
@@ -129,7 +164,7 @@ export default function EmployerJobDetailsScreen() {
   if (loading) {
     return (
       <Screen scroll>
-        <DetailHeader title="Job Details" />
+        <DetailHeader title={t('job.details')} />
         <View style={styles.skeleton} />
         <View style={styles.skeleton} />
         <View style={styles.skeletonTall} />
@@ -140,8 +175,8 @@ export default function EmployerJobDetailsScreen() {
   if (error || !job) {
     return (
       <Screen>
-        <DetailHeader title="Job Details" />
-        <ErrorState message={error ?? 'Job not found'} onRetry={() => void loadJob()} />
+        <DetailHeader title={t('job.details')} />
+        <ErrorState message={error ?? t('job.notFound')} onRetry={() => void loadJob()} />
       </Screen>
     );
   }
@@ -168,7 +203,7 @@ export default function EmployerJobDetailsScreen() {
       ) : null}
       {canPublish ? (
         <Button
-          label={mutating ? 'Publishing...' : 'Publish Job'}
+          label={mutating ? t('job.publishing') : t('job.publishJob')}
           onPress={handlePublish}
           loading={mutating}
           fullWidth
@@ -176,7 +211,7 @@ export default function EmployerJobDetailsScreen() {
       ) : null}
       {canComplete ? (
         <Button
-          label={mutating ? 'Confirming...' : 'Confirm Completion'}
+          label={mutating ? t('job.confirmingCompletion') : t('job.confirmCompletion')}
           onPress={handleComplete}
           loading={mutating}
           fullWidth
@@ -184,7 +219,7 @@ export default function EmployerJobDetailsScreen() {
       ) : null}
       {canViewApplications ? (
         <Button
-          label="View Applications"
+          label={t('job.viewApplications')}
           variant="secondary"
           onPress={handleViewApplications}
           fullWidth
@@ -192,7 +227,7 @@ export default function EmployerJobDetailsScreen() {
       ) : null}
       {canEdit ? (
         <Button
-          label="Edit Job"
+          label={t('job.editJob')}
           variant="secondary"
           onPress={() => router.push(employerEditJobRoute(job._id))}
           fullWidth
@@ -200,7 +235,7 @@ export default function EmployerJobDetailsScreen() {
       ) : null}
       {canCancel ? (
         <Button
-          label="Cancel Job"
+          label={t('job.cancelJob')}
           variant="destructive"
           onPress={handleCancel}
           disabled={mutating}
@@ -209,7 +244,7 @@ export default function EmployerJobDetailsScreen() {
       ) : null}
       {canDelete ? (
         <Button
-          label="Delete Job"
+          label={t('job.deleteJob')}
           variant="destructive"
           onPress={handleDelete}
           disabled={mutating}
@@ -221,18 +256,18 @@ export default function EmployerJobDetailsScreen() {
 
   return (
     <Screen scroll footer={footer} contentContainerStyle={styles.content}>
-      <DetailHeader title="Job Details" subtitle={getCategoryLabel(job.category)} />
+      <DetailHeader title={t('job.details')} subtitle={getCategoryLabel(job.category)} />
 
       <View style={styles.titleBlock}>
         <Text variant="headingXl" color="primary">
           {job.title}
         </Text>
-        <Badge label={employerJobStatusLabel(job.status)} variant={employerJobStatusVariant(job.status)} />
+        <Badge label={getStatusLabel(job.status)} variant={employerJobStatusVariant(job.status)} />
       </View>
 
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
-          Compensation
+          {t('job.compensation')}
         </Text>
         <Text variant="headingLg" color="primary">
           {formatCompensation(job.compensation)}
@@ -240,14 +275,14 @@ export default function EmployerJobDetailsScreen() {
         <View style={styles.metaRow}>
           <Users size={14} color={colors.text.muted} />
           <Text variant="bodyMd" color="secondary">
-            {job.workersRequired} worker{job.workersRequired === 1 ? '' : 's'} required
+            {t('job.workersRequired', { count: job.workersRequired })}
           </Text>
         </View>
       </Card>
 
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
-          Schedule
+          {t('job.schedule')}
         </Text>
         <Text variant="bodyLg" color="primary">
           {formatScheduleRange(job.schedule)}
@@ -265,20 +300,20 @@ export default function EmployerJobDetailsScreen() {
       {completion && (job.status === 'FILLED' || job.status === 'IN_PROGRESS') ? (
         <Card style={styles.section}>
           <Text variant="label" color="secondary">
-            Completion
-          </Text>
-          <Text variant="bodyMd" color="primary">
-            Workers confirmed: {completion.workersCompleted}/{completion.workersRequired}
+          {t('job.completion')}
+        </Text>
+        <Text variant="bodyMd" color="primary">
+            {t('job.workersConfirmed', { done: completion.workersCompleted, total: completion.workersRequired })}
           </Text>
           <Text variant="bodyMd" color="secondary">
-            {completion.employerCompleted ? 'Employer confirmed' : 'Awaiting employer confirmation'}
+            {completion.employerCompleted ? t('job.employerConfirmed') : t('job.awaitingEmployerConfirmation')}
           </Text>
         </Card>
       ) : null}
 
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
-          Location
+          {t('job.location')}
         </Text>
         <View style={styles.locationRow}>
           <MapPin size={16} color={colors.text.muted} />
@@ -290,7 +325,7 @@ export default function EmployerJobDetailsScreen() {
           <>
             <JobMapPreview latitude={latitude!} longitude={longitude!} />
             <Button
-              label="Open in Maps"
+              label={t('common.openInMaps')}
               variant="secondary"
               onPress={() =>
                 void openInMaps({
@@ -300,7 +335,7 @@ export default function EmployerJobDetailsScreen() {
                   city: job.location.city,
                 })
               }
-              accessibilityLabel="Open job location in maps"
+              accessibilityLabel={t('common.openMapsAccessibility')}
             />
           </>
         )}
@@ -308,7 +343,7 @@ export default function EmployerJobDetailsScreen() {
 
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
-          Description
+          {t('job.description')}
         </Text>
         <Text variant="bodyMd" color="primary">
           {job.description}
@@ -318,7 +353,7 @@ export default function EmployerJobDetailsScreen() {
       {job.hiringDeadline ? (
         <Card style={styles.section}>
           <Text variant="label" color="secondary">
-            Hiring deadline
+            {t('job.hiringDeadline')}
           </Text>
           <Text variant="bodyMd" color="primary">
             {new Date(job.hiringDeadline).toLocaleDateString('en-IN')}
@@ -329,26 +364,26 @@ export default function EmployerJobDetailsScreen() {
       {job.requirements ? (
         <Card style={styles.section}>
           <Text variant="label" color="secondary">
-            Requirements
+            {t('job.requirements')}
           </Text>
           {job.requirements.skills?.length ? (
             <Text variant="bodyMd" color="primary">
-              Skills: {job.requirements.skills.join(', ')}
+              {t('job.skills')}{job.requirements.skills.join(', ')}
             </Text>
           ) : null}
           {job.requirements.experience ? (
             <Text variant="bodyMd" color="primary">
-              Experience: {job.requirements.experience}
+              {t('job.experience')}{job.requirements.experience}
             </Text>
           ) : null}
           {job.requirements.dressCode ? (
             <Text variant="bodyMd" color="primary">
-              Dress code: {job.requirements.dressCode}
+              {t('job.dressCode')}{job.requirements.dressCode}
             </Text>
           ) : null}
           {job.requirements.languages?.length ? (
             <Text variant="bodyMd" color="primary">
-              Languages: {job.requirements.languages.join(', ')}
+              {t('job.languages')}{job.requirements.languages.join(', ')}
             </Text>
           ) : null}
         </Card>
@@ -358,26 +393,73 @@ export default function EmployerJobDetailsScreen() {
         visible={confirmAction !== null}
         title={
           confirmAction === 'cancel'
-            ? 'Cancel this job?'
+            ? t('job.cancelTitle')
             : confirmAction === 'delete'
-              ? 'Delete this job?'
-              : 'Confirm completion?'
+              ? t('job.deleteTitle')
+              : t('job.confirmCompletionTitle')
         }
         message={
           confirmAction === 'cancel'
-            ? 'The job will be marked as cancelled.'
+            ? t('job.cancelMessage')
             : confirmAction === 'delete'
-              ? 'This action cannot be undone.'
-              : 'Confirm that this job has been completed.'
+              ? t('job.deleteMessage')
+              : t('job.confirmCompletionMessage')
         }
         confirmLabel={
-          confirmAction === 'cancel' ? 'Cancel Job' : confirmAction === 'delete' ? 'Delete' : 'Confirm'
+          confirmAction === 'cancel'
+            ? t('job.cancelJob')
+            : confirmAction === 'delete'
+              ? t('job.deleteJob')
+              : t('job.confirmCompletion')
         }
         destructive={confirmAction === 'cancel' || confirmAction === 'delete'}
         loading={mutating}
         onConfirm={handleConfirm}
         onCancel={() => setConfirmAction(null)}
       />
+
+      <Modal
+        transparent
+        visible={Boolean(incompleteProfile)}
+        animationType="fade"
+        onRequestClose={() => setIncompleteProfile(null)}
+      >
+        <View style={styles.overlay}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setIncompleteProfile(null)}
+            accessibilityLabel={t('common.dismiss')}
+          />
+          <Card style={styles.dialog}>
+            <CompletionRing
+              percentage={incompleteProfile?.percentage ?? employerPercent ?? 0}
+              label={t('employerPublish.profileIncompleteRingLabel')}
+              size={104}
+            />
+            <Text variant="headingMd" color="primary" align="center">
+              {t('employerPublish.profileIncompleteTitle')}
+            </Text>
+            <Text variant="bodyMd" color="secondary" align="center">
+              {t('employerPublish.profileIncompleteMessage', {
+                percentage: incompleteProfile?.percentage ?? employerPercent ?? 0,
+              })}
+            </Text>
+            <View style={styles.dialogActions}>
+              <Button
+                label={t('common.cancel')}
+                variant="secondary"
+                onPress={() => setIncompleteProfile(null)}
+                style={styles.dialogButton}
+              />
+              <Button
+                label={t('employerPublish.completeProfile')}
+                onPress={() => router.push(employerEditProfileRoute())}
+                style={styles.dialogButton}
+              />
+            </View>
+          </Card>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -416,5 +498,29 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 12,
     backgroundColor: colors.surface.card,
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: colors.overlay.default,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
+  dialog: {
+    width: '100%',
+    maxWidth: 360,
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.xl,
+    borderRadius: radius.lg,
+  },
+  dialogActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    marginTop: spacing.sm,
+    width: '100%',
+  },
+  dialogButton: {
+    flex: 1,
   },
 });

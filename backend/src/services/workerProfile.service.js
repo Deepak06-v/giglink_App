@@ -17,6 +17,7 @@ const getWorkerProfile = async (userId) => {
       experience: "",
       languages: [],
       availability: "AVAILABLE",
+      weeklyAvailability: [],
     };
   }
   return profile;

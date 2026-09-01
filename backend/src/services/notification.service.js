@@ -213,6 +213,74 @@ const notifyJobCompleted = async (jobId, participantIds) => {
   await Promise.all(notifications);
 };
 
+/**
+ * Send a "your job starts soon" reminder to workers with ACTIVE assignments
+ * whose job is due to start within the given window. Idempotent per
+ * (recipient, job): once a JOB_STARTS_SOON notification exists for a worker on
+ * a job, later runs skip re-sending. This is deliberately isolated: it only
+ * ever calls createNotification, so it cannot perturb the existing
+ * application/assignment notification flow.
+ */
+const notifyUpcomingAssignments = async ({ hoursAhead = 24 } = {}) => {
+  const now = new Date();
+  const reminderWindow = new Date(now.getTime() + hoursAhead * 60 * 60 * 1000);
+
+  const assignments = await Assignment.find({ status: "ACTIVE" })
+    .populate({
+      path: "job",
+      match: {
+        "schedule.startDate": { $gte: now, $lt: reminderWindow },
+        status: { $in: ["OPEN", "FILLED", "IN_PROGRESS"] },
+      },
+      select: "title employer schedule",
+    })
+    .select("worker job")
+    .lean();
+
+  const pending = assignments.filter((assignment) => assignment.job);
+  if (pending.length === 0) {
+    return { reminded: 0, skippedDuplicate: 0 };
+  }
+
+  const alreadyReminded = await Notification.find({
+    recipient: { $in: pending.map((a) => a.worker) },
+    relatedJob: { $in: pending.map((a) => a.job._id) },
+    type: "JOB_STARTS_SOON",
+  })
+    .select("recipient relatedJob")
+    .lean();
+
+  const remindedKeys = new Set(
+    alreadyReminded.map((n) => `${n.recipient.toString()}:${n.relatedJob?.toString()}`)
+  );
+
+  let reminded = 0;
+  let skippedDuplicate = 0;
+  for (const assignment of pending) {
+    const key = `${assignment.worker.toString()}:${assignment.job._id.toString()}`;
+    if (remindedKeys.has(key)) {
+      skippedDuplicate += 1;
+      continue;
+    }
+    const startDate = assignment.job.schedule.startDate;
+    const created = await createNotification({
+      recipient: assignment.worker,
+      type: "JOB_STARTS_SOON",
+      title: "Your job starts soon",
+      message: `${assignment.job.title} begins ${formatStartDate(startDate)}. Be ready on time!`,
+      relatedJob: assignment.job._id,
+      relatedAssignment: assignment._id,
+    });
+    if (created) {
+      reminded += 1;
+    }
+  }
+
+  return { reminded, skippedDuplicate };
+};
+
+const formatStartDate = (date) => date.toISOString();
+
 export {
   createNotification,
   getUserNotifications,
@@ -227,4 +295,5 @@ export {
   notifyWorkerCompletionConfirmed,
   notifyEmployerCompletionConfirmed,
   notifyJobCompleted,
+  notifyUpcomingAssignments,
 };

@@ -7,6 +7,7 @@ export const SECURE_STORAGE_KEYS = {
   ACCESS_TOKEN: 'giglink_access_token',
   GUEST_MODE: 'giglink_guest_mode',
   LANGUAGE: 'giglink_language',
+  ONBOARDING_COMPLETED: 'giglink_onboarding_completed',
 } as const;
 
 export type SecureStorageKey =

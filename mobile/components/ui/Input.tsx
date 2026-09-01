@@ -3,7 +3,7 @@ import { StyleSheet, TextInput, View } from 'react-native';
 
 import { useFontFamily } from '@/constants/fonts';
 import { Text } from '@/components/ui/Text';
-import { colors, radius, sizes, spacing } from '@/constants/theme';
+import { colors, radius, sizes, spacing, typography } from '@/constants/theme';
 
 export interface InputProps extends TextInputProps {
   label?: string;
@@ -48,7 +48,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface.card,
     paddingHorizontal: spacing.lg,
     color: colors.text.primary,
-    fontSize: 15,
+    fontSize: typography.bodyLg.fontSize,
   },
   inputError: {
     borderColor: colors.semantic.error,

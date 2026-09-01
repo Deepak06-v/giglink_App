@@ -7,6 +7,7 @@ import { Badge, Button, Card, ErrorState, Text } from '@/components/ui';
 import { colors, radius, spacing } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { getEmployerProfile } from '@/lib/api/profiles';
+import { translate } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
 import type { EmployerProfile as EmployerProfileType } from '@/types';
 import { employerEditProfileRoute } from '@/utils/routing';
@@ -46,7 +47,7 @@ export default function EmployerProfileScreen() {
       const data = await getEmployerProfile();
       setProfile(data);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Unable to load profile'));
+      setError(getApiErrorMessage(err, translate('profile.unableLoadProfile')));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -78,7 +79,8 @@ export default function EmployerProfileScreen() {
     );
   }
 
-  const companyName = profile?.companyName || user?.name || 'Your Company';
+  const companyName = profile?.companyName || user?.name || translate('profile.yourCompany');
+  const completion = profile?.completion;
 
   return (
     <Screen
@@ -104,24 +106,24 @@ export default function EmployerProfileScreen() {
         <Text variant="headingLg" color="primary" align="center">
           {companyName}
         </Text>
-        <Badge label="Employer" variant="brand" />
+        <Badge label={translate('profile.employer')} variant="brand" />
       </View>
 
       <Text variant="headingMd" color="primary" style={styles.sectionTitle}>
-        Profile Information
+        {translate('profile.profileInformation')}
       </Text>
       <Card style={styles.infoCard}>
-        <InfoRow label="Email" value={user?.email ?? '—'} />
-        <InfoRow label="Phone" value={profile?.phone ?? '—'} />
-        <InfoRow label="Address" value={profile?.address ?? '—'} />
-        <InfoRow label="City" value={profile?.city ?? '—'} />
-        <InfoRow label="State" value={profile?.state ?? '—'} />
-        <InfoRow label="Pincode" value={profile?.pincode ?? '—'} />
+        <InfoRow label={translate('profile.email')} value={user?.email ?? '—'} />
+        <InfoRow label={translate('profile.phone')} value={profile?.phone ?? '—'} />
+        <InfoRow label={translate('profile.address')} value={profile?.address ?? '—'} />
+        <InfoRow label={translate('profile.city')} value={profile?.city ?? '—'} />
+        <InfoRow label={translate('profile.state')} value={profile?.state ?? '—'} />
+        <InfoRow label={translate('profile.pincode')} value={profile?.pincode ?? '—'} />
       </Card>
 
       {profile?.companyDescription ? (
         <Text variant="headingMd" color="primary" style={styles.sectionTitle}>
-          About
+          {translate('profile.about')}
         </Text>
       ) : null}
       {profile?.companyDescription ? (
@@ -132,9 +134,17 @@ export default function EmployerProfileScreen() {
         </Card>
       ) : null}
 
+      {completion ? (
+        <Card style={styles.completionCard}>
+          <Text variant="bodyMd" color="primary">
+            {translate('profile.completion.percentComplete', { percentage: completion.percentage })}
+          </Text>
+        </Card>
+      ) : null}
+
       <View style={styles.actions}>
-        <Button label="Edit Profile" onPress={() => router.push(employerEditProfileRoute())} />
-        <Button label="Logout" variant="secondary" onPress={() => void logout()} />
+        <Button label={translate('profile.editProfile')} onPress={() => router.push(employerEditProfileRoute())} />
+        <Button label={translate('profile.logout')} variant="secondary" onPress={() => void logout()} />
       </View>
     </Screen>
   );
@@ -171,6 +181,9 @@ const styles = StyleSheet.create({
   },
   infoRow: {
     gap: spacing.xs,
+  },
+  completionCard: {
+    marginBottom: spacing['2xl'],
   },
   actions: {
     gap: spacing.md,

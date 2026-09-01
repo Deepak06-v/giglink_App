@@ -5,11 +5,18 @@ import { EmployerApplicationCard } from '@/components/cards/EmployerApplicationC
 import { EmployerJobCard } from '@/components/cards/EmployerJobCard';
 import { EmployerHeader } from '@/components/layout/EmployerHeader';
 import { Screen } from '@/components/layout/Screen';
-import { Button, Card, ErrorState, Text } from '@/components/ui';
-import { colors, radius, spacing } from '@/constants/theme';
+import {
+  Briefcase,
+  CheckCircle2,
+  ClipboardList,
+  Clock,
+} from '@/components/icons';
+import { Button, Card, ErrorState, StatRow, Text } from '@/components/ui';
+import { colors, radius, sizes, spacing } from '@/constants/theme';
 import { getEmployerAllApplications } from '@/lib/api/applications';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { getEmployerJobs } from '@/lib/api/jobs';
+import { translate } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
 import type { Application, Job } from '@/types';
 import {
@@ -28,19 +35,6 @@ interface DashboardStats {
   cancelled: number;
   completed: number;
   totalApplications: number;
-}
-
-function StatCard({ label, value }: { label: string; value: number | string }) {
-  return (
-    <Card style={styles.statCard}>
-      <Text variant="headingLg" color="primary">
-        {value}
-      </Text>
-      <Text variant="caption" color="secondary">
-        {label}
-      </Text>
-    </Card>
-  );
 }
 
 export default function EmployerDashboardScreen() {
@@ -72,7 +66,7 @@ export default function EmployerDashboardScreen() {
       setJobsTotal(jobsData.pagination.total);
       setApplicationsTotal(appsData.pagination.total);
     } catch (err) {
-      setStatsError(getApiErrorMessage(err, 'Unable to load dashboard'));
+      setStatsError(getApiErrorMessage(err, translate('dashboard.unableLoadDashboard')));
     } finally {
       setStatsLoading(false);
     }
@@ -85,7 +79,7 @@ export default function EmployerDashboardScreen() {
       const { applications } = await getEmployerAllApplications(1, 5, 'PENDING');
       setPendingApps(applications);
     } catch (err) {
-      setAttentionError(getApiErrorMessage(err, 'Unable to load applications'));
+      setAttentionError(getApiErrorMessage(err, translate('application.unableLoadApplications')));
     } finally {
       setAttentionLoading(false);
     }
@@ -140,6 +134,8 @@ export default function EmployerDashboardScreen() {
     );
   }
 
+  const assigned = stats.filled + stats.inProgress;
+
   return (
     <Screen scroll={false} padded={false}>
       <ScrollView
@@ -162,55 +158,70 @@ export default function EmployerDashboardScreen() {
 
         <View style={styles.padded}>
           {statsLoading ? (
-            <View style={styles.statsGrid}>
+            <Card style={styles.statsSkeleton}>
               {Array.from({ length: 4 }).map((_, index) => (
-                <View key={index} style={styles.statSkeleton} />
+                <View key={index} style={styles.statRowSkeleton} />
               ))}
-            </View>
+            </Card>
           ) : (
-            <View style={styles.statsGrid}>
-              <StatCard label="Total Posted" value={stats.totalPosted} />
-              <StatCard label="Open" value={stats.open} />
-              <StatCard label="Assigned" value={stats.filled + stats.inProgress} />
-              <StatCard label="Completed" value={stats.completed} />
-            </View>
+            <Card style={styles.statsCard}>
+              <StatRow
+                icon={Briefcase}
+                iconColor={colors.brand.primary}
+                iconBackground={colors.brand.tint}
+                title={translate('dashboard.totalPosted')}
+                value={stats.totalPosted}
+              />
+              <View style={styles.divider} />
+              <StatRow
+                icon={Clock}
+                iconColor={colors.semantic.warning}
+                iconBackground={colors.semanticTint.warning}
+                title={translate('dashboard.open')}
+                value={stats.open}
+              />
+              <View style={styles.divider} />
+              <StatRow
+                icon={ClipboardList}
+                iconColor={colors.accent.opportunity}
+                iconBackground={colors.accent.tint}
+                title={translate('dashboard.assigned')}
+                value={assigned}
+              />
+              <View style={styles.divider} />
+              <StatRow
+                icon={CheckCircle2}
+                iconColor={colors.semantic.success}
+                iconBackground={colors.semanticTint.success}
+                title={translate('dashboard.completed')}
+                value={stats.completed}
+              />
+            </Card>
           )}
           {jobsTotal > 50 ? (
             <Text variant="caption" color="muted">
-              Stats reflect your most recent {jobs.length} jobs.
+              {translate('dashboard.statsNote', { count: jobs.length })}
             </Text>
           ) : null}
         </View>
 
         <View style={styles.padded}>
-          <Text variant="label" color="secondary" style={styles.sectionLabel}>
-            Quick actions
-          </Text>
-          <View style={styles.quickActions}>
-            <Button label="+ Post Job" onPress={() => router.push(employerCreateJobRoute())} style={styles.quickAction} />
-            <Button
-              label="Review Applications"
-              variant="secondary"
-              onPress={() => router.push(employerApplicationsRoute())}
-              style={styles.quickAction}
-            />
-            <Button
-              label="View My Jobs"
-              variant="secondary"
-              onPress={() => router.push('/(employer)/(tabs)/jobs')}
-              style={styles.quickAction}
-            />
-          </View>
+          <Button
+            label={translate('dashboard.postJob')}
+            onPress={() => router.push(employerCreateJobRoute())}
+            fullWidth
+            style={styles.postCta}
+          />
         </View>
 
         <View style={styles.padded}>
           <View style={styles.sectionHeader}>
             <Text variant="headingMd" color="primary">
-              Needs Attention
+              {translate('dashboard.needsAttention')}
             </Text>
             {attentionLoading ? null : pendingApps.length > 0 ? (
               <Text variant="caption" color="warning">
-                {pendingApps.length} pending
+                {translate('dashboard.pendingCount', { count: pendingApps.length })}
               </Text>
             ) : null}
           </View>
@@ -222,7 +233,7 @@ export default function EmployerDashboardScreen() {
           ) : pendingApps.length === 0 ? (
             <Card variant="elevated" style={styles.emptyCard}>
               <Text variant="bodyMd" color="secondary">
-                No pending applications. You're all caught up.
+                {translate('dashboard.noPendingApplications')}
               </Text>
             </Card>
           ) : (
@@ -238,7 +249,7 @@ export default function EmployerDashboardScreen() {
               ))}
               {pendingApps.length > 3 ? (
                 <Button
-                  label="View all applications"
+                  label={translate('dashboard.viewAllApplications')}
                   variant="ghost"
                   onPress={() => router.push(employerApplicationsRoute())}
                 />
@@ -250,10 +261,10 @@ export default function EmployerDashboardScreen() {
         <View style={styles.padded}>
           <View style={styles.sectionHeader}>
             <Text variant="headingMd" color="primary">
-              Recent Active Jobs
+              {translate('dashboard.recentActiveJobs')}
             </Text>
             <Button
-              label="See all"
+              label={translate('dashboard.seeAll')}
               variant="ghost"
               onPress={() => router.push('/(employer)/(tabs)/jobs')}
             />
@@ -268,9 +279,8 @@ export default function EmployerDashboardScreen() {
           ) : recentActiveJobs.length === 0 ? (
             <Card variant="elevated" style={styles.emptyCard}>
               <Text variant="bodyMd" color="secondary">
-                No active jobs right now. Post your first job to get started.
+                {translate('dashboard.noActiveJobs')}
               </Text>
-              <Button label="Post a Job" onPress={() => router.push(employerCreateJobRoute())} style={styles.mtSm} />
             </Card>
           ) : (
             <View style={styles.jobList}>
@@ -298,31 +308,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     gap: spacing.md,
   },
-  sectionLabel: {
-    marginBottom: spacing.xs,
+  statsCard: {
+    paddingVertical: spacing.sm,
   },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  statsSkeleton: {
+    paddingVertical: spacing.md,
     gap: spacing.md,
   },
-  statCard: {
-    width: '47%',
-    flexGrow: 1,
-    gap: spacing.xs,
-    alignItems: 'flex-start',
-  },
-  statSkeleton: {
-    width: '47%',
-    height: 76,
-    borderRadius: radius.lg,
+  statRowSkeleton: {
+    height: sizes.touchTarget,
+    borderRadius: radius.md,
     backgroundColor: colors.surface.elevated,
-    flexGrow: 1,
   },
-  quickActions: {
-    gap: spacing.md,
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border.default,
   },
-  quickAction: {
+  postCta: {
     alignSelf: 'stretch',
   },
   sectionHeader: {
@@ -340,9 +342,6 @@ const styles = StyleSheet.create({
   emptyCard: {
     gap: spacing.md,
     alignItems: 'flex-start',
-  },
-  mtSm: {
-    marginTop: spacing.sm,
   },
   attentionSkeleton: {
     height: 120,

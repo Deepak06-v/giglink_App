@@ -34,7 +34,10 @@ export const getWorkerAssignmentByIdController = async (req, res) => {
     const workerId = req.user.userId;
     const assignment = await getAssignmentById(req.params.assignmentId, workerId);
     
-    const completionStatus = await getCompletionStatus(assignment.job._id.toString());
+    const completionStatus = await getCompletionStatus(
+      assignment.job._id.toString(),
+      req.user.userId
+    );
     
     return res.json({
       success: true,

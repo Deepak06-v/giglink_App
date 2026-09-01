@@ -36,6 +36,7 @@ export function useTypography(): Record<
   const language = useLanguageStore((state) => state.language);
   const font = FONT_FAMILIES[language];
   return {
+    display: { ...typography.display, fontFamily: font[700] },
     headingXl: { ...typography.headingXl, fontFamily: font[700] },
     headingLg: { ...typography.headingLg, fontFamily: font[600] },
     headingMd: { ...typography.headingMd, fontFamily: font[600] },

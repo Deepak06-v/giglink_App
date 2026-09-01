@@ -37,7 +37,16 @@ export type JobSortOption =
   | 'pay_high'
   | 'pay_low'
   | 'date_soon'
-  | 'date_late';
+  | 'date_late'
+  | 'best_match';
+
+export type WeekdayIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+export interface WeeklyAvailabilityWindow {
+  day: WeekdayIndex; // 0=Sunday ... 6=Saturday (JS getDay ordering)
+  startTime: string; // 24-hour HH:MM, local time
+  endTime: string; // 24-hour HH:MM, local time
+}
 
 export interface JobLocation {
   address: string;
@@ -93,6 +102,15 @@ export interface JobApplicationState {
   isAssigned: boolean;
 }
 
+export type AvailabilityMatchStatus = 'MATCH' | 'PARTIAL' | 'CONFLICT' | 'UNKNOWN';
+
+export interface AvailabilityMatch {
+  status: AvailabilityMatchStatus;
+  matchedDays: number[];
+  conflictingDays: number[];
+  coveragePercent: number;
+}
+
 export interface Job {
   _id: string;
   title: string;
@@ -113,6 +131,7 @@ export interface Job {
   isAssigned?: boolean;
   hasCapacity?: boolean;
   applicationState?: JobApplicationState;
+  availabilityMatch?: AvailabilityMatch | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -135,6 +154,7 @@ export interface Application {
   appliedAt: string;
   reviewedAt?: string;
   reviewedBy?: string;
+  availabilityMatch?: AvailabilityMatch | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -165,6 +185,12 @@ export interface AssignmentCompletion {
   waitingFor: 'employer' | 'workers' | null;
 }
 
+export interface ProfileCompletion {
+  complete: boolean;
+  percentage: number;
+  missingFields: string[];
+}
+
 export interface WorkerProfile {
   _id?: string;
   user: string;
@@ -180,6 +206,8 @@ export interface WorkerProfile {
   experience?: string;
   languages?: string[];
   availability?: 'AVAILABLE' | 'LIMITED' | 'UNAVAILABLE';
+  weeklyAvailability?: WeeklyAvailabilityWindow[];
+  completion?: ProfileCompletion;
 }
 
 export interface JobFilters {
@@ -193,6 +221,7 @@ export interface JobFilters {
   fromDate?: string;
   toDate?: string;
   sort?: JobSortOption;
+  availableOnly?: boolean;
   page?: number;
   limit?: number;
 }
@@ -208,6 +237,41 @@ export interface EmployerProfile {
   city?: string;
   state?: string;
   pincode?: string;
+  completion?: ProfileCompletion;
+}
+
+export interface TrustSummary {
+  averageRating: number | null;
+  totalReviews: number;
+}
+
+export interface WorkerMarketplaceProfile {
+  id: string;
+  name?: string;
+  profileImage?: string;
+  bio?: string;
+  skills?: string[];
+  experience?: string;
+  languages?: string[];
+  availability?: 'AVAILABLE' | 'LIMITED' | 'UNAVAILABLE';
+  weeklyAvailability?: WeeklyAvailabilityWindow[];
+  location?: {
+    city?: string;
+    state?: string;
+  };
+  rating: TrustSummary;
+}
+
+export interface EmployerMarketplaceProfile {
+  id: string;
+  companyName?: string;
+  logo?: string;
+  companyDescription?: string;
+  location?: {
+    city?: string;
+    state?: string;
+  };
+  rating: TrustSummary;
 }
 
 export type NotificationType =

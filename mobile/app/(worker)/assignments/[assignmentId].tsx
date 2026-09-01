@@ -9,6 +9,7 @@ import { Badge, Button, Card, ConfirmDialog, ErrorState, Text } from '@/componen
 import { colors, spacing } from '@/constants/theme';
 import { completeAssignment, getAssignmentById } from '@/lib/api/assignments';
 import { getApiErrorMessage } from '@/lib/api/errors';
+import { useTranslation } from '@/lib/i18n';
 import type { Assignment, AssignmentCompletion } from '@/types';
 import {
   formatCompensation,
@@ -16,11 +17,12 @@ import {
   formatScheduleRange,
   formatTimeRange,
   getEmployerName,
+  getStatusLabel,
   isAssignmentUpcoming,
 } from '@/utils/formatJob';
 import { openInMaps } from '@/utils/maps';
 
-function statusLabel(assignment: Assignment): string {
+function statusToken(assignment: Assignment): string {
   if (assignment.status === 'COMPLETED') {
     return 'COMPLETED';
   }
@@ -31,6 +33,7 @@ function statusLabel(assignment: Assignment): string {
 }
 
 export default function AssignmentDetailsScreen() {
+  const { t } = useTranslation();
   const { assignmentId } = useLocalSearchParams<{ assignmentId: string }>();
 
   const [assignment, setAssignment] = useState<Assignment | null>(null);
@@ -53,11 +56,11 @@ export default function AssignmentDetailsScreen() {
       setAssignment(data.assignment);
       setCompletion(data.completion);
     } catch (err) {
-      setError(getApiErrorMessage(err, 'Unable to load assignment'));
+      setError(getApiErrorMessage(err, t('assignment.unableLoadAssignment')));
     } finally {
       setLoading(false);
     }
-  }, [assignmentId]);
+  }, [assignmentId, t]);
 
   useEffect(() => {
     void loadAssignment();
@@ -87,7 +90,7 @@ export default function AssignmentDetailsScreen() {
       setConfirming(false);
       await loadAssignment();
     } catch (err) {
-      setCompleteError(getApiErrorMessage(err, 'Please try again.'));
+      setCompleteError(getApiErrorMessage(err, t('application.pleaseTryAgain')));
     } finally {
       setCompleting(false);
     }
@@ -96,7 +99,7 @@ export default function AssignmentDetailsScreen() {
   if (loading) {
     return (
       <Screen scroll>
-        <DetailHeader title="Assignment" />
+        <DetailHeader title={t('assignment.title')} />
         <View style={styles.skeleton} />
         <View style={styles.skeletonTall} />
       </Screen>
@@ -106,8 +109,11 @@ export default function AssignmentDetailsScreen() {
   if (error || !assignment) {
     return (
       <Screen>
-        <DetailHeader title="Assignment" />
-        <ErrorState message={error ?? 'Assignment not found'} onRetry={() => void loadAssignment()} />
+        <DetailHeader title={t('assignment.title')} />
+        <ErrorState
+          message={error ?? t('assignment.notFound')}
+          onRetry={() => void loadAssignment()}
+        />
       </Screen>
     );
   }
@@ -115,7 +121,7 @@ export default function AssignmentDetailsScreen() {
   const job = assignment.job;
   const { latitude, longitude } = job.location.coordinates || {};
   const hasCoordinates = latitude !== undefined && longitude !== undefined;
-  const label = statusLabel(assignment);
+  const labelToken = statusToken(assignment);
 
   return (
     <Screen
@@ -129,7 +135,7 @@ export default function AssignmentDetailsScreen() {
               </Text>
             ) : null}
             <Button
-              label={completing ? 'Submitting...' : 'Mark as Completed'}
+              label={completing ? t('assignment.submitting') : t('assignment.markAsCompleted')}
               onPress={handleComplete}
               loading={completing}
               fullWidth
@@ -138,11 +144,11 @@ export default function AssignmentDetailsScreen() {
         ) : completedSuccess || assignment.workerCompleted ? (
           <View style={styles.successBox}>
             <Text variant="headingMd" color="success" align="center">
-              Completion submitted
+              {t('assignment.completionSubmitted')}
             </Text>
             {completion?.waitingFor === 'employer' ? (
               <Text variant="bodyMd" color="secondary" align="center">
-                Waiting for employer confirmation.
+                {t('assignment.waitingForEmployer')}
               </Text>
             ) : null}
           </View>
@@ -150,7 +156,7 @@ export default function AssignmentDetailsScreen() {
       }
       contentContainerStyle={styles.content}
     >
-      <DetailHeader title="Assignment" subtitle={job.title} />
+      <DetailHeader title={t('assignment.title')} subtitle={job.title} />
 
       <View style={styles.titleBlock}>
         <Text variant="headingLg" color="primary">
@@ -159,12 +165,12 @@ export default function AssignmentDetailsScreen() {
         <Text variant="bodyMd" color="secondary">
           {getEmployerName(job.employer)}
         </Text>
-        <Badge label={label} variant={label === 'COMPLETED' ? 'success' : 'brand'} />
+        <Badge label={getStatusLabel(labelToken)} variant={labelToken === 'COMPLETED' ? 'success' : 'brand'} />
       </View>
 
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
-          Compensation
+          {t('job.compensation')}
         </Text>
         <Text variant="headingMd" color="primary">
           {formatCompensation(job.compensation)}
@@ -173,7 +179,7 @@ export default function AssignmentDetailsScreen() {
 
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
-          Schedule
+          {t('job.schedule')}
         </Text>
         <Text variant="bodyMd" color="primary">
           {formatScheduleRange(job.schedule)}
@@ -190,7 +196,7 @@ export default function AssignmentDetailsScreen() {
 
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
-          Location
+          {t('job.location')}
         </Text>
         <View style={styles.locationRow}>
           <MapPin size={16} color={colors.text.muted} />
@@ -202,7 +208,7 @@ export default function AssignmentDetailsScreen() {
           <>
             <JobMapPreview latitude={latitude!} longitude={longitude!} />
             <Button
-              label="Open in Maps"
+              label={t('common.openInMaps')}
               variant="secondary"
               onPress={() =>
                 void openInMaps({
@@ -212,7 +218,7 @@ export default function AssignmentDetailsScreen() {
                   city: job.location.city,
                 })
               }
-              accessibilityLabel="Open job location in maps"
+              accessibilityLabel={t('common.openMapsAccessibility')}
             />
           </>
         )}
@@ -221,7 +227,7 @@ export default function AssignmentDetailsScreen() {
       {job.description ? (
         <Card style={styles.section}>
           <Text variant="label" color="secondary">
-            Instructions
+            {t('assignment.instructions')}
           </Text>
           <Text variant="bodyMd" color="primary">
             {job.description}
@@ -231,8 +237,8 @@ export default function AssignmentDetailsScreen() {
 
       <ConfirmDialog
         visible={confirming}
-        title="Mark this assignment as completed?"
-        confirmLabel="Confirm"
+        title={t('assignment.completeTitle')}
+        confirmLabel={t('assignment.confirm')}
         loading={completing}
         onConfirm={() => void confirmComplete()}
         onCancel={() => setConfirming(false)}
