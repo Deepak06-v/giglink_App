@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Mail, MapPin, User } from '@/components/icons';
+import { Briefcase, Mail, MapPin, User } from '@/components/icons';
 import { JobMapPreview } from '@/components/maps/JobMapPreview';
 import { DetailHeader } from '@/components/layout/DetailHeader';
 import { Screen } from '@/components/layout/Screen';
-import { Badge, Button, Card, ConfirmDialog, ErrorState, Text } from '@/components/ui';
-import { colors, spacing } from '@/constants/theme';
+import { Badge, Button, Card, ConfirmDialog, ErrorState, Skeleton, Text } from '@/components/ui';
+import { colors, radius, spacing } from '@/constants/theme';
 import { acceptApplication, getEmployerApplicationById, rejectApplication } from '@/lib/api/applications';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import type { BadgeVariant } from '@/components/ui/Badge';
@@ -125,10 +125,19 @@ export default function EmployerApplicationDetailsScreen() {
 
   if (loading) {
     return (
-      <Screen scroll>
+      <Screen scroll contentContainerStyle={styles.content}>
         <DetailHeader title="Application" />
-        <View style={styles.skeleton} />
-        <View style={styles.skeleton} />
+        <Skeleton width="55%" height={26} />
+        <Skeleton width="35%" height={20} style={styles.skeletonInset} />
+        <Card style={styles.section}>
+          <Skeleton width="40%" height={14} />
+          <Skeleton width="80%" height={16} style={styles.skeletonInset} />
+          <Skeleton width="90%" height={16} style={styles.skeletonInset} />
+        </Card>
+        <Card style={styles.section}>
+          <Skeleton width="40%" height={14} />
+          <Skeleton width="70%" height={16} style={styles.skeletonInset} />
+        </Card>
       </Screen>
     );
   }
@@ -189,15 +198,40 @@ export default function EmployerApplicationDetailsScreen() {
     <Screen scroll footer={footer} contentContainerStyle={styles.content}>
       <DetailHeader title={t('application.title')} subtitle={job.title} />
 
-      <View style={styles.titleBlock}>
-        <Text variant="headingXl" color="primary">
-          {workerName(application.worker)}
-        </Text>
+      <View style={styles.applicantBlock}>
+        <View style={styles.applicantAvatar}>
+          <User size={26} color={colors.brand.primary} />
+        </View>
+        <View style={styles.applicantText}>
+          <Text variant="headingXl" color="primary">
+            {workerName(application.worker)}
+          </Text>
+          <Text variant="caption" color="muted">
+            {t('application.appliedOn', { date: new Date(application.appliedAt).toLocaleDateString('en-IN') })}
+          </Text>
+        </View>
         <Badge label={getStatusLabel(application.status)} variant={statusVariant(application.status)} />
-        <Text variant="caption" color="muted">
-          Applied {new Date(application.appliedAt).toLocaleDateString('en-IN')}
-        </Text>
       </View>
+
+      <Card style={styles.section}>
+        <Text variant="label" color="secondary">
+          {t('application.job')}
+        </Text>
+        <View style={styles.infoRow}>
+          <Briefcase size={16} color={colors.text.muted} />
+          <View style={styles.jobText}>
+            <Text variant="headingMd" color="primary">
+              {job.title}
+            </Text>
+            <Text variant="caption" color="brand">
+              {getCategoryLabel(job.category)}
+            </Text>
+            <Text variant="bodyMd" color="primary">
+              {formatCompensation(job.compensation)}
+            </Text>
+          </View>
+        </View>
+      </Card>
 
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
@@ -227,27 +261,6 @@ export default function EmployerApplicationDetailsScreen() {
           fullWidth
         />
       ) : null}
-
-      <Card style={styles.section}>
-        <Text variant="label" color="secondary">
-          {t('application.job')}
-        </Text>
-        <Text variant="headingMd" color="primary">
-          {job.title}
-        </Text>
-        <Text variant="caption" color="brand">
-          {getCategoryLabel(job.category)}
-        </Text>
-      </Card>
-
-      <Card style={styles.section}>
-        <Text variant="label" color="secondary">
-          {t('job.compensation')}
-        </Text>
-        <Text variant="headingMd" color="primary">
-          {formatCompensation(job.compensation)}
-        </Text>
-      </Card>
 
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
@@ -313,11 +326,33 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.md,
   },
-  titleBlock: {
-    gap: spacing.sm,
+  applicantBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.brand.tint,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+  },
+  applicantAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  applicantText: {
+    flex: 1,
+    gap: 2,
+    minWidth: 0,
   },
   section: {
     gap: spacing.sm,
+  },
+  jobText: {
+    flex: 1,
+    gap: spacing.xs,
   },
   infoRow: {
     flexDirection: 'row',
@@ -327,10 +362,7 @@ const styles = StyleSheet.create({
   footer: {
     gap: spacing.sm,
   },
-  skeleton: {
-    height: 96,
-    borderRadius: 12,
-    backgroundColor: colors.surface.card,
-    marginBottom: spacing.md,
+  skeletonInset: {
+    marginTop: spacing.md,
   },
 });

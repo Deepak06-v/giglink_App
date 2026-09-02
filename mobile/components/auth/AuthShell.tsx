@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Text } from '@/components/ui';
-import { colors, spacing } from '@/constants/theme';
+import { colors, radius, spacing } from '@/constants/theme';
 
 interface AuthShellProps extends PropsWithChildren {
   title: string;
@@ -23,10 +23,13 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Text variant="headingXl" color="primary">
-              GigLink
-            </Text>
-            <Text variant="headingLg" color="primary" style={styles.title}>
+            <View style={styles.wordmarkRow}>
+              <View style={styles.wordmarkDot} />
+              <Text variant="headingLg" color="brand">
+                GigLink
+              </Text>
+            </View>
+            <Text variant="headingXl" color="primary" style={styles.title}>
               {title}
             </Text>
             <Text variant="bodyLg" color="secondary">
@@ -58,6 +61,17 @@ const styles = StyleSheet.create({
     paddingTop: spacing['3xl'],
     paddingBottom: spacing['2xl'],
     gap: spacing.sm,
+  },
+  wordmarkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  wordmarkDot: {
+    width: 12,
+    height: 12,
+    borderRadius: radius.full,
+    backgroundColor: colors.accent.opportunity,
   },
   title: {
     marginTop: spacing.md,

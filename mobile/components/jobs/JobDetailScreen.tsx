@@ -1,11 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronRight, MapPin } from '@/components/icons';
+import {
+  Briefcase,
+  CalendarDays,
+  ChevronRight,
+  Clock,
+  IndianRupee,
+  Languages,
+  MapPin,
+  Shirt,
+} from '@/components/icons';
 import { JobMapPreview } from '@/components/maps/JobMapPreview';
 import { DetailHeader } from '@/components/layout/DetailHeader';
 import { Screen } from '@/components/layout/Screen';
-import { Badge, Button, Card, CompletionRing, ErrorState, Text } from '@/components/ui';
+import { Badge, Button, Card, CompletionRing, ErrorState, Skeleton, Text } from '@/components/ui';
 import { colors, radius, spacing } from '@/constants/theme';
 import { applyToJob } from '@/lib/api/applications';
 import { getApiErrorMessage, getProfileCompletionInfo } from '@/lib/api/errors';
@@ -147,11 +156,24 @@ export function JobDetailScreen({ jobId }: JobDetailScreenProps) {
 
   if (loading) {
     return (
-      <Screen scroll>
+      <Screen scroll contentContainerStyle={styles.content}>
         <DetailHeader title={t('job.details')} />
-        <View style={styles.skeletonBlock} />
-        <View style={styles.skeletonBlock} />
-        <View style={styles.skeletonBlockTall} />
+        <Skeleton width="55%" height={28} />
+        <Skeleton width="40%" height={14} style={styles.skeletonInset} />
+        <Card style={styles.compensationCard}>
+          <Skeleton width={44} height={44} radiusValue={radius.full} />
+          <Skeleton width="50%" height={26} />
+        </Card>
+        <Card style={styles.section}>
+          <Skeleton width="40%" height={14} />
+          <Skeleton width="80%" height={16} style={styles.skeletonInset} />
+          <Skeleton width="60%" height={16} style={styles.skeletonInset} />
+        </Card>
+        <Card style={styles.section}>
+          <Skeleton width="40%" height={14} />
+          <Skeleton width="90%" height={14} style={styles.skeletonInset} />
+          <Skeleton width="70%" height={14} style={styles.skeletonInset} />
+        </Card>
       </Screen>
     );
   }
@@ -270,45 +292,57 @@ export function JobDetailScreen({ jobId }: JobDetailScreenProps) {
 
       {completionHintBlock}
 
-      <Card style={styles.section}>
-        <Text variant="label" color="secondary">
-          {t('job.compensation')}
-        </Text>
-        <Text variant="headingLg" color="primary">
-          {formatCompensation(job.compensation)}
-        </Text>
-      </Card>
-
-      <Card style={styles.section}>
-        <Text variant="label" color="secondary">
-          {t('job.schedule')}
-        </Text>
-        <Text variant="bodyLg" color="primary">
-          {formatScheduleRange(job.schedule)}
-        </Text>
-        <Text variant="bodyMd" color="secondary">
-          {formatTimeRange(job.schedule)}
-        </Text>
-        {job.duration ? (
-          <Text variant="caption" color="muted">
-            {formatDuration(job.duration)}
+      <View style={styles.compensationCard}>
+        <View style={styles.payIcon}>
+          <IndianRupee size={22} color={colors.brand.primary} />
+        </View>
+        <View style={styles.payTextBlock}>
+          <Text variant="bodySm" color="secondary">
+            {t('job.compensation')}
           </Text>
-        ) : null}
-      </Card>
-
-      <Card style={styles.section}>
-        <Text variant="label" color="secondary">
-          {t('job.location')}
-        </Text>
-        <View style={styles.locationRow}>
-          <MapPin size={16} color={colors.text.muted} />
-          <Text variant="bodyMd" color="primary">
-            {job.location.address}, {job.location.city}
+          <Text variant="headingXl" color="primary">
+            {formatCompensation(job.compensation)}
           </Text>
+        </View>
+      </View>
+
+      <Card style={styles.section} variant="elevated">
+        <Text variant="label" color="secondary">
+          {t('job.essentials')}
+        </Text>
+        <View style={styles.essentialsList}>
+          <View style={styles.essentialsRow}>
+            <CalendarDays size={18} color={colors.text.muted} />
+            <Text variant="bodyLg" color="primary" style={styles.essentialsValue}>
+              {formatScheduleRange(job.schedule)}
+            </Text>
+          </View>
+          <View style={styles.essentialsRow}>
+            <Clock size={18} color={colors.text.muted} />
+            <Text variant="bodyLg" color="primary" style={styles.essentialsValue}>
+              {formatTimeRange(job.schedule) || formatScheduleRange(job.schedule)}
+            </Text>
+          </View>
+          {job.duration ? (
+            <View style={styles.essentialsRow}>
+              <Briefcase size={18} color={colors.text.muted} />
+              <Text variant="bodyLg" color="primary" style={styles.essentialsValue}>
+                {formatDuration(job.duration)}
+              </Text>
+            </View>
+          ) : null}
+          <View style={styles.essentialsRow}>
+            <MapPin size={18} color={colors.text.muted} />
+            <Text variant="bodyLg" color="primary" style={styles.essentialsValue}>
+              {job.location.address}, {job.location.city}
+            </Text>
+          </View>
         </View>
         {hasCoordinates && (
           <>
-            <JobMapPreview latitude={latitude!} longitude={longitude!} />
+            <View style={styles.mapSpacer}>
+              <JobMapPreview latitude={latitude!} longitude={longitude!} />
+            </View>
             <Button
               label={t('common.openInMaps')}
               variant="secondary"
@@ -341,28 +375,48 @@ export function JobDetailScreen({ jobId }: JobDetailScreenProps) {
             {t('job.requirements')}
           </Text>
           {job.requirements.skills?.length ? (
-            <Text variant="bodyMd" color="primary">
-              {t('job.skills')}
-              {job.requirements.skills.join(', ')}
-            </Text>
+            <View style={styles.skillList}>
+              {job.requirements.skills.map((skill) => (
+                <View key={skill} style={styles.skillChip}>
+                  <Text variant="bodySm" color="brand">
+                    {skill}
+                  </Text>
+                </View>
+              ))}
+            </View>
           ) : null}
           {job.requirements.experience ? (
-            <Text variant="bodyMd" color="primary">
-              {t('job.experience')}
-              {job.requirements.experience}
-            </Text>
+            <View style={styles.requirementRow}>
+              <Briefcase size={16} color={colors.text.muted} />
+              <Text variant="bodyMd" color="secondary">
+                {t('job.experience')}
+                <Text variant="bodyMd" color="primary">
+                  {job.requirements.experience}
+                </Text>
+              </Text>
+            </View>
           ) : null}
           {job.requirements.dressCode ? (
-            <Text variant="bodyMd" color="primary">
-              {t('job.dressCode')}
-              {job.requirements.dressCode}
-            </Text>
+            <View style={styles.requirementRow}>
+              <Shirt size={16} color={colors.text.muted} />
+              <Text variant="bodyMd" color="secondary">
+                {t('job.dressCode')}
+                <Text variant="bodyMd" color="primary">
+                  {job.requirements.dressCode}
+                </Text>
+              </Text>
+            </View>
           ) : null}
           {job.requirements.languages?.length ? (
-            <Text variant="bodyMd" color="primary">
-              {t('job.languages')}
-              {job.requirements.languages.join(', ')}
-            </Text>
+            <View style={styles.requirementRow}>
+              <Languages size={16} color={colors.text.muted} />
+              <Text variant="bodyMd" color="secondary">
+                {t('job.languages')}
+                <Text variant="bodyMd" color="primary">
+                  {job.requirements.languages.join(', ')}
+                </Text>
+              </Text>
+            </View>
           ) : null}
         </Card>
       ) : null}
@@ -436,9 +490,58 @@ const styles = StyleSheet.create({
   section: {
     gap: spacing.sm,
   },
-  locationRow: {
+  compensationCard: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.brand.tint,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+  },
+  payIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.full,
+    backgroundColor: colors.surface.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  payTextBlock: {
+    flex: 1,
+    gap: 2,
+  },
+  skeletonInset: {
+    marginTop: spacing.md,
+  },
+  essentialsList: {
+    gap: spacing.md,
+    marginTop: spacing.xs,
+  },
+  essentialsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  essentialsValue: {
+    flex: 1,
+  },
+  mapSpacer: {
+    marginTop: spacing.sm,
+  },
+  skillList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  skillChip: {
+    backgroundColor: colors.brand.soft,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  requirementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
   },
   applyFooter: {
@@ -449,17 +552,6 @@ const styles = StyleSheet.create({
   },
   successFooter: {
     gap: spacing.md,
-  },
-  skeletonBlock: {
-    height: 80,
-    borderRadius: 12,
-    backgroundColor: colors.surface.card,
-    marginBottom: spacing.md,
-  },
-  skeletonBlockTall: {
-    height: 180,
-    borderRadius: 12,
-    backgroundColor: colors.surface.card,
   },
   hintRow: {
     flexDirection: 'row',

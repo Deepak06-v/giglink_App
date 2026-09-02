@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: radius.md,
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.surface.sunken,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   skeleton: {
     height: 88,
     borderRadius: radius.lg,
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.skeleton.base,
   },
   footerLoader: {
     marginVertical: spacing.lg,

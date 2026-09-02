@@ -13,18 +13,18 @@ export interface BadgeProps {
 
 const variantStyles: Record<
   BadgeVariant,
-  { background: string; text: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'brand' }
+  { background: string; text: 'secondary' | 'success' | 'warning' | 'error' | 'brand' }
 > = {
-  default: { background: colors.surface.elevated, text: 'secondary' },
+  default: { background: colors.surface.sunken, text: 'secondary' },
   success: { background: colors.semanticTint.success, text: 'success' },
   warning: { background: colors.semanticTint.warning, text: 'warning' },
   error: { background: colors.semanticTint.error, text: 'error' },
-  brand: { background: colors.semanticTint.brand, text: 'brand' },
+  brand: { background: colors.brand.soft, text: 'brand' },
 };
 
 export function Badge({ label, variant = 'default' }: BadgeProps) {
   const palette = variantStyles[variant];
-  const fontFamily = useFontFamily(500);
+  const fontFamily = useFontFamily(600);
 
   return (
     <View style={[styles.base, { backgroundColor: palette.background }]}>
@@ -42,5 +42,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
-  label: {},
+  label: {
+    letterSpacing: 0.1,
+  },
 });

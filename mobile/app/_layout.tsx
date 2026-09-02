@@ -1,10 +1,11 @@
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
   useFonts,
-} from '@expo-google-fonts/inter';
+} from '@expo-google-fonts/plus-jakarta-sans';
 import {
   NotoSansKannada_400Regular,
   NotoSansKannada_500Medium,
@@ -31,10 +32,11 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
     NotoSansKannada_400Regular,
     NotoSansKannada_500Medium,
     NotoSansKannada_600SemiBold,
@@ -117,7 +119,7 @@ export default function RootLayout() {
 
   return (
     <AuthBootstrap>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <NotificationLifecycle />
       <Stack
         screenOptions={{

@@ -16,7 +16,7 @@ export interface SkillTagProps {
 }
 
 const VARIANT_STYLES: Record<SkillTagVariant, { background: string; text: 'secondary' | 'accent' | 'brand' }> = {
-  default: { background: colors.surface.elevated, text: 'secondary' },
+  default: { background: colors.surface.sunken, text: 'secondary' },
   accent: { background: colors.accent.tint, text: 'accent' },
   brand: { background: colors.brand.tint, text: 'brand' },
 };

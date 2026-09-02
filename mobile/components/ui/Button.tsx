@@ -28,7 +28,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const isDisabled = disabled || loading;
-  const fontFamily = useFontFamily(600);
+  const fontFamily = useFontFamily(700);
 
   return (
     <Pressable
@@ -36,12 +36,12 @@ export function Button({
       accessibilityLabel={label}
       accessibilityState={{ disabled: isDisabled }}
       disabled={isDisabled}
+      hitSlop={4}
       style={({ pressed }) => [
         styles.base,
         sizeStyles[size],
         variantStyles[variant],
         fullWidth && styles.fullWidth,
-        pressed && !isDisabled && { backgroundColor: pressedBgMap[variant] },
         pressed && !isDisabled && styles.pressed,
         isDisabled && styles.disabled,
         style,
@@ -50,7 +50,7 @@ export function Button({
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'primary' ? colors.text.inverse : colors.brand.primary}
+          color={variant === 'primary' ? colors.text.onBrand : colors.brand.primary}
           size="small"
         />
       ) : (
@@ -66,18 +66,11 @@ export function Button({
   );
 }
 
-const labelColorMap: Record<ButtonVariant, 'inverse' | 'primary' | 'brand' | 'error'> = {
-  primary: 'inverse',
+const labelColorMap: Record<ButtonVariant, 'onBrand' | 'primary' | 'brand' | 'error'> = {
+  primary: 'onBrand',
   secondary: 'primary',
   destructive: 'error',
   ghost: 'brand',
-};
-
-const pressedBgMap: Record<ButtonVariant, string | undefined> = {
-  primary: colors.brand.primaryPressed,
-  secondary: colors.surface.higher,
-  destructive: colors.semanticTint.error,
-  ghost: colors.semanticTint.brand,
 };
 
 const styles = StyleSheet.create({
@@ -92,13 +85,15 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   pressed: {
-    opacity: 0.92,
-    transform: [{ scale: 0.98 }],
+    opacity: 0.9,
+    transform: [{ scale: 0.985 }],
   },
   disabled: {
     opacity: 0.4,
   },
-  label: {},
+  label: {
+    letterSpacing: 0.2,
+  },
 });
 
 const sizeStyles = StyleSheet.create({
@@ -116,7 +111,7 @@ const variantStyles = StyleSheet.create({
     backgroundColor: colors.brand.primary,
   },
   secondary: {
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.surface.card,
     borderWidth: 1,
     borderColor: colors.border.default,
   },

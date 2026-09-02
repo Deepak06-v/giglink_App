@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
   line: {
     height: 12,
     borderRadius: radius.sm,
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.skeleton.base,
   },
   short: {
     width: '30%',

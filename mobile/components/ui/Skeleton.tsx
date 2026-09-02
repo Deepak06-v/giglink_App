@@ -63,7 +63,7 @@ export function SkeletonRow({ style }: SkeletonRowProps) {
 
 const styles = StyleSheet.create({
   base: {
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.skeleton.base,
   },
   card: {
     backgroundColor: colors.surface.card,

@@ -4,17 +4,26 @@ import { StyleSheet, View } from 'react-native';
 
 import { colors, radius, shadows, spacing } from '@/constants/theme';
 
-export type CardVariant = 'default' | 'elevated';
+export type CardVariant = 'default' | 'elevated' | 'tonal';
 
 export interface CardProps {
   children?: ReactNode;
   variant?: CardVariant;
   style?: StyleProp<ViewStyle>;
+  /** Remove the default horizontal/vertical padding (for custom inner layouts). */
+  unpadded?: boolean;
 }
 
-export function Card({ children, variant = 'default', style }: CardProps) {
+export function Card({ children, variant = 'default', unpadded = false, style }: CardProps) {
   return (
-    <View style={[styles.base, variant === 'elevated' ? styles.elevated : styles.default, style]}>
+    <View
+      style={[
+        styles.base,
+        variant === 'elevated' ? styles.elevated : variant === 'tonal' ? styles.tonal : styles.default,
+        unpadded && styles.unpadded,
+        style,
+      ]}
+    >
       {children}
     </View>
   );
@@ -23,15 +32,23 @@ export function Card({ children, variant = 'default', style }: CardProps) {
 const styles = StyleSheet.create({
   base: {
     borderRadius: radius.lg,
-    padding: spacing.lg,
-    borderWidth: 1,
-    borderColor: colors.border.default,
   },
   default: {
     backgroundColor: colors.surface.card,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    padding: spacing.lg,
   },
   elevated: {
     backgroundColor: colors.surface.elevated,
     ...shadows.elevated,
+    padding: spacing.lg,
+  },
+  tonal: {
+    backgroundColor: colors.surface.sunken,
+    padding: spacing.lg,
+  },
+  unpadded: {
+    padding: 0,
   },
 });

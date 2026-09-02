@@ -18,12 +18,12 @@ interface StateMeta {
 }
 
 const STATE_META: Record<StateVariant, StateMeta> = {
-  empty: { icon: Inbox, background: colors.surface.elevated, color: colors.text.muted },
-  noResults: { icon: SearchX, background: colors.surface.elevated, color: colors.text.muted },
+  empty: { icon: Inbox, background: colors.surface.sunken, color: colors.text.muted },
+  noResults: { icon: SearchX, background: colors.surface.sunken, color: colors.text.muted },
   noReviews: { icon: CalendarDays, background: colors.accent.tint, color: colors.accent.opportunity },
   incomplete: { icon: UserRound, background: colors.brand.tint, color: colors.brand.primary },
   success: { icon: CheckCircle2, background: colors.semanticTint.success, color: colors.semantic.success },
-  none: { icon: Inbox, background: colors.surface.elevated, color: colors.text.muted },
+  none: { icon: Inbox, background: colors.surface.sunken, color: colors.text.muted },
 };
 
 export interface StateIllustrationProps {

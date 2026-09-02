@@ -114,7 +114,7 @@ export default function EmployerApplicationsScreen() {
               accessibilityRole="button"
               accessibilityState={{ selected }}
             >
-              <Text variant="caption" color={selected ? 'brand' : 'secondary'}>
+              <Text variant="label" color={selected ? 'onBrand' : 'secondary'} style={styles.filterChipText}>
                 {t(item.labelKey)}
               </Text>
             </Pressable>
@@ -230,7 +230,10 @@ const styles = StyleSheet.create({
   },
   filterChipActive: {
     borderColor: colors.brand.primary,
-    backgroundColor: colors.semanticTint.brand,
+    backgroundColor: colors.brand.primary,
+  },
+  filterChipText: {
+    fontSize: 13,
   },
   separator: {
     height: spacing.md,

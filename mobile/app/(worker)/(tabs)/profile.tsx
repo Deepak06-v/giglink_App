@@ -237,18 +237,25 @@ export default function WorkerProfileScreen() {
       }}
     >
       <View style={styles.header}>
-        {profile?.profileImage ? (
-          <Image source={{ uri: profile.profileImage }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarFallback}>
-            <Text variant="headingLg" color="primary">
-              {initials}
-            </Text>
-          </View>
-        )}
+        <View style={styles.avatarWrap}>
+          {profile?.profileImage ? (
+            <Image source={{ uri: profile.profileImage }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <Text variant="headingLg" color="brand">
+                {initials}
+              </Text>
+            </View>
+          )}
+        </View>
         <View style={styles.headerInfo}>
           <Text variant="headingLg" color="primary" numberOfLines={1}>
             {user?.name ?? translate('common.worker')}
+          </Text>
+          <Text variant="bodyMd" color="secondary" numberOfLines={1}>
+            {profile?.location?.city
+              ? [profile.location.city, profile.location.state].filter(Boolean).join(', ')
+              : translate('profile.completion.addLocation')}
           </Text>
           <View style={styles.headerMeta}>{availabilityBadge}</View>
         </View>
@@ -408,6 +415,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing['2xl'],
     marginTop: spacing.sm,
   },
+  avatarWrap: {
+    padding: 3,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    borderRadius: radius.full,
+  },
   avatar: {
     width: 72,
     height: 72,
@@ -417,7 +430,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: radius.full,
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.surface.sunken,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/noto-sans-kannada": "^0.4.3",
+    "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
     "@react-native-community/datetimepicker": "8.4.1",
     "@react-native-firebase/app": "23.8.4",
     "@react-native-firebase/messaging": "23.8.4",

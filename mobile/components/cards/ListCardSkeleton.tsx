@@ -21,7 +21,7 @@ const styles = StyleSheet.create({
   line: {
     height: 12,
     borderRadius: radius.sm,
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.skeleton.base,
   },
   title: {
     width: '70%',

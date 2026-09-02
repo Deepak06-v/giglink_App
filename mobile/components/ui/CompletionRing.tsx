@@ -44,7 +44,7 @@ export function CompletionRing({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke={colors.surface.elevated}
+          stroke={colors.surface.sunken}
           strokeWidth={strokeWidth}
           fill="transparent"
         />

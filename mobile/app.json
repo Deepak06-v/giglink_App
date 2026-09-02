@@ -6,11 +6,11 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "giglink",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "androidNavigationBar": {
-      "barStyle": "light-content",
-      "backgroundColor": "#1B1B22"
+      "barStyle": "dark-content",
+      "backgroundColor": "#FFFFFF"
     },
     "ios": {
       "supportsTablet": false
@@ -41,7 +41,7 @@
     {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0B0B0F"
+      "backgroundColor": "#FFFFFF"
     }
   ],
   "expo-secure-store",

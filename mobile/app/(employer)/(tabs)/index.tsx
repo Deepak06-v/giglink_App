@@ -318,7 +318,7 @@ const styles = StyleSheet.create({
   statRowSkeleton: {
     height: sizes.touchTarget,
     borderRadius: radius.md,
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.surface.sunken,
   },
   divider: {
     height: StyleSheet.hairlineWidth,
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   attentionSkeleton: {
     height: 120,
     borderRadius: radius.lg,
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.surface.sunken,
   },
   jobSkeletonList: {
     gap: spacing.md,
@@ -354,6 +354,6 @@ const styles = StyleSheet.create({
   jobSkeleton: {
     height: 140,
     borderRadius: radius.lg,
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.surface.sunken,
   },
 });

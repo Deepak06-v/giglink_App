@@ -157,6 +157,7 @@ export const kn = {
     applyNow: 'ಈಗ ಅರ್ಜಿ ಸಲ್ಲಿಸಿ',
     compensation: 'ವೇತನ',
     schedule: 'ವೇಳಾಪಟ್ಟಿ',
+    essentials: 'ಪ್ರಮುಖ ಮಾಹಿತಿ',
     location: 'ಸ್ಥಳ',
     description: 'ವಿವರಣೆ',
     requirements: 'ಅವಶ್ಯಕತೆಗಳು',

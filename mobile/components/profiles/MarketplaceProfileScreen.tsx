@@ -5,8 +5,8 @@ import { DetailHeader } from '@/components/layout/DetailHeader';
 import { Screen } from '@/components/layout/Screen';
 import { Star } from '@/components/icons';
 import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
-import { Badge, Card, EmptyState, ErrorState, Text } from '@/components/ui';
-import { colors, spacing } from '@/constants/theme';
+import { Badge, Card, EmptyState, ErrorState, Skeleton, Text } from '@/components/ui';
+import { colors, radius, spacing } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { translate } from '@/lib/i18n';
 import type {
@@ -69,11 +69,22 @@ export function MarketplaceProfileScreen({
 
   if (loading) {
     return (
-      <Screen scroll>
+      <Screen scroll contentContainerStyle={styles.content}>
         <DetailHeader title={title} subtitle={subtitle} />
-        <View style={styles.skeletonBlock} />
-        <View style={styles.skeletonBlock} />
-        <View style={styles.skeletonBlockTall} />
+        <View style={styles.header}>
+          <Skeleton width={88} height={88} radiusValue={radius.full} />
+          <Skeleton width="55%" height={22} />
+          <Skeleton width="30%" height={14} />
+        </View>
+        <Card style={styles.section}>
+          <Skeleton width="40%" height={14} />
+          <Skeleton width="90%" height={14} style={styles.skeletonInset} />
+          <Skeleton width="70%" height={14} style={styles.skeletonInset} />
+        </Card>
+        <Card style={styles.section}>
+          <Skeleton width="40%" height={14} />
+          <Skeleton width="85%" height={14} style={styles.skeletonInset} />
+        </Card>
       </Screen>
     );
   }
@@ -135,19 +146,22 @@ export function MarketplaceProfileScreen({
       </View>
 
       {profile.rating.totalReviews > 0 ? (
-        <View style={styles.ratingRow}>
-          <Star size={16} color={colors.semantic.warning} fill={colors.semantic.warning} />
-          <Text variant="bodyLg" color="primary">
+        <View style={styles.ratingCard}>
+          <Star size={18} color={colors.semantic.warning} fill={colors.semantic.warning} />
+          <Text variant="headingLg" color="primary">
             {profile.rating.averageRating?.toFixed(1) ?? '—'}
           </Text>
+          <View style={styles.ratingDivider} />
           <Text variant="bodyMd" color="secondary">
             {translate('marketplace.reviewCount', { count: profile.rating.totalReviews })}
           </Text>
         </View>
       ) : (
-        <Text variant="bodyMd" color="secondary" align="center" style={styles.noRating}>
-          {translate('marketplace.noReviews')}
-        </Text>
+        <View style={styles.ratingCard}>
+          <Text variant="bodyMd" color="secondary">
+            {translate('marketplace.noReviews')}
+          </Text>
+        </View>
       )}
 
       {isWorker ? (
@@ -180,9 +194,15 @@ function WorkerSections({ profile }: { profile: WorkerMarketplaceProfile }) {
           <Text variant="label" color="secondary">
             {translate('marketplace.skills')}
           </Text>
-          <Text variant="bodyMd" color="primary">
-            {profile.skills.join(', ')}
-          </Text>
+          <View style={styles.chipList}>
+            {profile.skills.map((skill) => (
+              <View key={skill} style={styles.chip}>
+                <Text variant="bodySm" color="brand">
+                  {skill}
+                </Text>
+              </View>
+            ))}
+          </View>
         </Card>
       ) : null}
 
@@ -236,12 +256,22 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.sm,
   },
-  ratingRow: {
+  ratingCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
+    gap: spacing.sm,
+    alignSelf: 'center',
+    backgroundColor: colors.surface.sunken,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  ratingDivider: {
+    width: 1,
+    height: 16,
+    backgroundColor: colors.border.default,
   },
   noRating: {
     marginBottom: spacing.sm,
@@ -249,15 +279,18 @@ const styles = StyleSheet.create({
   section: {
     gap: spacing.sm,
   },
-  skeletonBlock: {
-    height: 80,
-    borderRadius: 12,
-    backgroundColor: colors.surface.card,
-    marginBottom: spacing.md,
+  chipList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
   },
-  skeletonBlockTall: {
-    height: 180,
-    borderRadius: 12,
-    backgroundColor: colors.surface.card,
+  chip: {
+    backgroundColor: colors.brand.soft,
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  skeletonInset: {
+    marginTop: spacing.md,
   },
 });

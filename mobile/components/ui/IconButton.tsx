@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.8,
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.surface.sunken,
   },
   disabled: {
     opacity: 0.4,

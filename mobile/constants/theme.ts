@@ -1,48 +1,59 @@
 /**
- * GigLink design tokens — source of truth: docs/MOBILE_DESIGN_SYSTEM.md
+ * GigLink design tokens — single light-first theme.
+ * Visual identity: modern premium consumer marketplace.
+ * Primary: electric violet. Accent: warm coral. Neutral: warm gray.
  */
 
 export const colors = {
   background: {
-    primary: '#0B0B0F',
-    secondary: '#111116',
+    primary: '#F6F7FB',
+    secondary: '#EEF0F6',
   },
   surface: {
-    card: '#15151B',
-    elevated: '#1B1B22',
-    higher: '#202027',
+    card: '#FFFFFF',
+    elevated: '#FFFFFF',
+    sunken: '#F2F3F8',
+  },
+  skeleton: {
+    base: '#ECEEF3',
+    highlight: '#F6F7FA',
   },
   border: {
-    default: '#27272A',
+    default: '#E9EAF0',
+    strong: '#D8DAE3',
   },
   text: {
-    primary: '#F5F5F7',
-    secondary: '#A1A1AA',
-    muted: '#71717A',
+    primary: '#191B23',
+    secondary: '#5A5F6E',
+    muted: '#9BA1AE',
     inverse: '#FFFFFF',
+    onBrand: '#FFFFFF',
   },
   brand: {
-    primary: '#4C8DFF',
-    primaryPressed: '#3B82F6',
-    tint: 'rgba(76, 141, 255, 0.14)',
+    primary: '#6C5CE7',
+    primaryPressed: '#5A4BD1',
+    tint: 'rgba(108, 92, 231, 0.10)',
+    soft: '#EDEBFC',
   },
   accent: {
-    opportunity: '#F5B942',
-    tint: 'rgba(245, 185, 66, 0.14)',
+    opportunity: '#FF6B35',
+    tint: 'rgba(255, 107, 53, 0.10)',
+    soft: '#FFEDE4',
   },
   overlay: {
-    default: 'rgba(0, 0, 0, 0.6)',
+    default: 'rgba(19, 20, 28, 0.5)',
   },
   semantic: {
-    success: '#22C55E',
-    warning: '#F59E0B',
-    error: '#EF4444',
+    success: '#12B76A',
+    warning: '#F79009',
+    error: '#E5484D',
   },
   semanticTint: {
-    success: 'rgba(34, 197, 94, 0.12)',
-    warning: 'rgba(245, 158, 11, 0.12)',
-    error: 'rgba(239, 68, 68, 0.12)',
-    brand: 'rgba(76, 141, 255, 0.14)',
+    success: 'rgba(18, 183, 106, 0.12)',
+    warning: 'rgba(247, 144, 9, 0.12)',
+    error: 'rgba(229, 72, 77, 0.12)',
+    brand: 'rgba(108, 92, 231, 0.10)',
+    accent: 'rgba(255, 107, 53, 0.10)',
   },
 } as const;
 
@@ -54,13 +65,15 @@ export const spacing = {
   xl: 20,
   '2xl': 24,
   '3xl': 32,
+  '4xl': 40,
 } as const;
 
 export const radius = {
-  sm: 10,
+  sm: 8,
   md: 12,
   lg: 16,
   xl: 20,
+  '2xl': 24,
   full: 9999,
 } as const;
 
@@ -68,57 +81,62 @@ export const typography = {
   display: {
     fontSize: 34,
     lineHeight: 40,
-    fontFamily: 'Inter_700Bold',
+    fontFamily: 'PlusJakartaSans_800ExtraBold',
   },
   headingXl: {
-    fontSize: 28,
-    lineHeight: 34,
-    fontFamily: 'Inter_700Bold',
+    fontSize: 26,
+    lineHeight: 32,
+    fontFamily: 'PlusJakartaSans_700Bold',
   },
   headingLg: {
     fontSize: 20,
     lineHeight: 26,
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'PlusJakartaSans_700Bold',
   },
   headingMd: {
     fontSize: 17,
     lineHeight: 22,
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: 'PlusJakartaSans_600SemiBold',
   },
   bodyLg: {
-    fontSize: 15,
-    lineHeight: 22,
-    fontFamily: 'Inter_400Regular',
+    fontSize: 16,
+    lineHeight: 24,
+    fontFamily: 'PlusJakartaSans_500Medium',
   },
   bodyMd: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontFamily: 'PlusJakartaSans_400Regular',
+  },
+  bodySm: {
     fontSize: 14,
     lineHeight: 20,
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'PlusJakartaSans_400Regular',
   },
   label: {
     fontSize: 13,
     lineHeight: 18,
-    fontFamily: 'Inter_500Medium',
+    fontFamily: 'PlusJakartaSans_600SemiBold',
   },
   caption: {
     fontSize: 12,
     lineHeight: 16,
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'PlusJakartaSans_400Regular',
   },
 } as const;
 
 export const shadows = {
   elevated: {
-    shadowColor: '#000000',
+    shadowColor: '#1A3A5C',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.24,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
   },
   higher: {
-    shadowColor: '#000000',
+    shadowColor: '#1A3A5C',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.32,
+    shadowOpacity: 0.12,
     shadowRadius: 24,
     elevation: 8,
   },
@@ -126,8 +144,8 @@ export const shadows = {
 
 export const sizes = {
   touchTarget: 44,
-  buttonHeight: 48,
-  inputHeight: 48,
+  buttonHeight: 52,
+  inputHeight: 52,
   iconSm: 16,
   iconMd: 20,
   iconLg: 24,

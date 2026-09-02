@@ -4,7 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { Bell } from '@/components/icons';
 import { IconButton, Text } from '@/components/ui';
 import { useFontFamily } from '@/constants/fonts';
-import { colors, spacing } from '@/constants/theme';
+import { colors, radius, spacing } from '@/constants/theme';
 import { useTranslation } from '@/lib/i18n';
 import { useNotificationStore } from '@/store/notificationStore';
 import { getGreeting } from '@/utils/formatJob';
@@ -30,7 +30,7 @@ export function WorkerHeader({ name, subtitle, onNotificationsPress }: WorkerHea
   return (
     <View style={styles.container}>
       <View style={styles.textBlock}>
-        <Text variant="headingLg" color="primary">
+        <Text variant="headingXl" color="primary">
           {getGreeting(name)}
         </Text>
         <Text variant="bodyMd" color="secondary">
@@ -42,6 +42,7 @@ export function WorkerHeader({ name, subtitle, onNotificationsPress }: WorkerHea
           icon={Bell}
           accessibilityLabel={t('common.notifications')}
           onPress={onNotificationsPress}
+          style={styles.bellButton}
         />
         {unreadCount > 0 ? (
           <View style={styles.badge}>
@@ -67,15 +68,21 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.xs,
   },
+  bellButton: {
+    backgroundColor: colors.surface.card,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+  },
   badge: {
     position: 'absolute',
-    top: 2,
-    right: 2,
+    top: 6,
+    right: 6,
     minWidth: 18,
     height: 18,
     borderRadius: 9,
     paddingHorizontal: spacing.xs,
-    backgroundColor: colors.brand.primary,
+    backgroundColor: colors.semantic.error,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -42,10 +42,10 @@ export function ProfileAvatar({ source, name, size = 64, square = false }: Profi
 
 const styles = StyleSheet.create({
   image: {
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.surface.sunken,
   },
   fallback: {
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.surface.sunken,
     alignItems: 'center',
     justifyContent: 'center',
   },

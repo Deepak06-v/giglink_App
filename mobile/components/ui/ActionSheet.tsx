@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: colors.surface.higher,
+    backgroundColor: colors.surface.card,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     paddingTop: spacing.md,
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   itemPressed: {
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.surface.sunken,
   },
   itemDisabled: {
     opacity: 0.4,
@@ -144,11 +144,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.surface.sunken,
     marginTop: spacing.sm,
   },
   cancelPressed: {
-    backgroundColor: colors.surface.card,
+    backgroundColor: colors.border.default,
   },
   cancelText: {
     fontWeight: '600',

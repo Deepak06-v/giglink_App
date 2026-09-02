@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border.default,
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.surface.sunken,
     padding: spacing.md,
   },
   iosActions: {

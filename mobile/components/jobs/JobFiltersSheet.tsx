@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.overlay.default,
   },
   sheet: {
-    backgroundColor: colors.surface.higher,
+    backgroundColor: colors.surface.card,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     paddingHorizontal: spacing.lg,

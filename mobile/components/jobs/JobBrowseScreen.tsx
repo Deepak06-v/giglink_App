@@ -193,7 +193,7 @@ export function JobBrowseScreen({ header, onJobPress }: JobBrowseScreenProps) {
       {header}
 
       <View style={styles.searchBox}>
-        <Search size={18} color={colors.text.muted} />
+        <Search size={20} color={colors.text.muted} />
         <TextInput
           value={searchQuery}
           onChangeText={setSearchQuery}
@@ -212,9 +212,6 @@ export function JobBrowseScreen({ header, onJobPress }: JobBrowseScreenProps) {
         ) : null}
       </View>
 
-      <Text variant="label" color="secondary" style={styles.sectionLabel}>
-        {t('home.quickFilters')}
-      </Text>
       <FlatList
         horizontal
         data={quickFilters}
@@ -228,21 +225,23 @@ export function JobBrowseScreen({ header, onJobPress }: JobBrowseScreenProps) {
             accessibilityRole="button"
             accessibilityState={{ selected: item.active }}
           >
-            <Text variant="caption" color={item.active ? 'brand' : 'secondary'}>
+            <Text variant="label" color={item.active ? 'onBrand' : 'secondary'} style={styles.quickChipText}>
               {item.label}
             </Text>
           </Pressable>
         )}
       />
 
-      <Text variant="headingMd" color="primary" style={styles.sectionTitle}>
-        {t('home.availableGigs')}
-      </Text>
-      {appliedFilters.availableOnly ? (
-        <Text variant="caption" color="secondary" style={styles.availableOnlyHint}>
-          {t('home.availableOnlyActiveHint')}
+      <View style={styles.sectionTitleRow}>
+        <Text variant="headingLg" color="primary">
+          {t('home.availableGigs')}
         </Text>
-      ) : null}
+        {appliedFilters.availableOnly ? (
+          <Text variant="caption" color="brand">
+            {t('home.availableOnlyActiveHint')}
+          </Text>
+        ) : null}
+      </View>
     </View>
   );
 
@@ -319,19 +318,19 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   headerContent: {
-    paddingTop: spacing.sm,
+    paddingTop: spacing.md,
     paddingBottom: spacing.md,
   },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border.default,
     backgroundColor: colors.surface.card,
     paddingHorizontal: spacing.md,
-    minHeight: 48,
+    minHeight: 52,
     marginBottom: spacing.lg,
   },
   searchInput: {
@@ -349,16 +348,25 @@ const styles = StyleSheet.create({
   },
   quickChip: {
     borderRadius: radius.full,
+    backgroundColor: colors.surface.card,
     borderWidth: 1,
     borderColor: colors.border.default,
-    backgroundColor: colors.surface.card,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm + 2,
     marginRight: spacing.sm,
   },
   quickChipActive: {
+    backgroundColor: colors.brand.primary,
     borderColor: colors.brand.primary,
-    backgroundColor: colors.semanticTint.brand,
+  },
+  quickChipText: {
+    fontSize: 13,
+  },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
   },
   sectionTitle: {
     marginBottom: spacing.md,

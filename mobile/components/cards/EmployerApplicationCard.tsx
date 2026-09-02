@@ -59,7 +59,7 @@ export function EmployerApplicationCard({ application, onPress, onViewProfile }:
       <Card style={styles.card}>
         <View style={styles.headerRow}>
           <View style={styles.avatar}>
-            <User size={16} color={colors.text.secondary} />
+            <User size={16} color={colors.brand.primary} />
           </View>
           <View style={styles.textBlock}>
             <Text variant="headingMd" color="primary" numberOfLines={1}>
@@ -116,7 +116,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.brand.soft,
     alignItems: 'center',
     justifyContent: 'center',
   },

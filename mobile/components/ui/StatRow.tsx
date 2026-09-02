@@ -30,7 +30,7 @@ export function StatRow({
   value,
   icon: Icon,
   iconColor = colors.text.secondary,
-  iconBackground = colors.surface.elevated,
+  iconBackground = colors.surface.sunken,
   showChevron = false,
   right,
   disabled,

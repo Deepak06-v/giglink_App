@@ -4,9 +4,9 @@ import { Text as RNText, StyleSheet } from 'react-native';
 import { useTypography } from '@/constants/fonts';
 import { colors } from '@/constants/theme';
 
-export type TextVariant = 'display' | 'headingXl' | 'headingLg' | 'headingMd' | 'bodyLg' | 'bodyMd' | 'label' | 'caption';
+export type TextVariant = 'display' | 'headingXl' | 'headingLg' | 'headingMd' | 'bodyLg' | 'bodyMd' | 'bodySm' | 'label' | 'caption';
 
-export type TextColor = 'primary' | 'secondary' | 'muted' | 'brand' | 'accent' | 'success' | 'warning' | 'error' | 'inverse';
+export type TextColor = 'primary' | 'secondary' | 'muted' | 'brand' | 'accent' | 'success' | 'warning' | 'error' | 'inverse' | 'onBrand';
 
 const colorMap: Record<TextColor, string> = {
   primary: colors.text.primary,
@@ -18,6 +18,7 @@ const colorMap: Record<TextColor, string> = {
   warning: colors.semantic.warning,
   error: colors.semantic.error,
   inverse: colors.text.inverse,
+  onBrand: colors.text.onBrand,
 };
 
 export interface TextProps extends RNTextProps {

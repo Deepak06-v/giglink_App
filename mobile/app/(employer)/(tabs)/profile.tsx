@@ -3,7 +3,7 @@ import { Image, RefreshControl, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Building2 } from '@/components/icons';
 import { Screen } from '@/components/layout/Screen';
-import { Badge, Button, Card, ErrorState, Text } from '@/components/ui';
+import { Badge, Button, Card, ErrorState, Skeleton, Text } from '@/components/ui';
 import { colors, radius, spacing } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { getEmployerProfile } from '@/lib/api/profiles';
@@ -98,13 +98,11 @@ export default function EmployerProfileScreen() {
 
   if (loading) {
     return (
-      <Screen scroll>
-        <View style={styles.skeleton}>
-          <View style={styles.avatarSkeleton} />
-          <View style={[styles.lineSkeleton, styles.lineTitle]} />
-          <View style={[styles.lineSkeleton, styles.lineShort]} />
-          <View style={styles.cardSkeleton} />
-        </View>
+      <Screen scroll contentContainerStyle={styles.skeleton}>
+        <Skeleton width={96} height={96} radiusValue={radius.lg} />
+        <Skeleton width="50%" height={22} />
+        <Skeleton width="30%" height={14} />
+        <Skeleton width="100%" height={180} radiusValue={radius.lg} />
       </Screen>
     );
   }
@@ -138,7 +136,7 @@ export default function EmployerProfileScreen() {
           <Image source={{ uri: profile.logo }} style={styles.avatar} />
         ) : (
           <View style={styles.avatarFallback}>
-            <Building2 size={40} color={colors.brand.primary} />
+            <Building2 size={40} color={colors.surface.card} />
           </View>
         )}
         <Text variant="headingLg" color="primary" align="center">
@@ -209,7 +207,7 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: radius.lg,
-    backgroundColor: colors.surface.elevated,
+    backgroundColor: colors.brand.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.sm,
@@ -259,30 +257,5 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     marginTop: spacing.lg,
     alignItems: 'center',
-  },
-  avatarSkeleton: {
-    width: 96,
-    height: 96,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface.elevated,
-  },
-  lineSkeleton: {
-    height: 18,
-    borderRadius: radius.sm,
-    backgroundColor: colors.surface.elevated,
-  },
-  lineTitle: {
-    width: '50%',
-  },
-  lineShort: {
-    width: '30%',
-    height: 14,
-  },
-  cardSkeleton: {
-    width: '100%',
-    height: 180,
-    borderRadius: radius.lg,
-    backgroundColor: colors.surface.elevated,
-    marginTop: spacing.lg,
   },
 });

@@ -2,7 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from '@/components/icons';
 import { IconButton, Text } from '@/components/ui';
-import { spacing } from '@/constants/theme';
+import { colors, radius, spacing } from '@/constants/theme';
 import { useTranslation } from '@/lib/i18n';
 
 interface DetailHeaderProps {
@@ -20,6 +20,8 @@ export function DetailHeader({ title, subtitle }: DetailHeaderProps) {
         icon={ChevronLeft}
         accessibilityLabel={t('common.goBack')}
         onPress={() => router.back()}
+        style={styles.backButton}
+        color={colors.text.primary}
       />
       <View style={styles.textBlock}>
         <Text variant="headingLg" color="primary" numberOfLines={1}>
@@ -42,6 +44,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     marginBottom: spacing.lg,
+  },
+  backButton: {
+    backgroundColor: colors.surface.card,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    borderRadius: radius.full,
   },
   textBlock: {
     flex: 1,

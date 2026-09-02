@@ -157,6 +157,7 @@ export const en = {
     applyNow: 'Apply Now',
     compensation: 'Compensation',
     schedule: 'Schedule',
+    essentials: 'Essentials',
     location: 'Location',
     description: 'Description',
     requirements: 'Requirements',
