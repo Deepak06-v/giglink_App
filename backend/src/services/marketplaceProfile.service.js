@@ -23,9 +23,6 @@ const getWorkerMarketplaceProfile = async (userId) => {
     experience: profile.experience || undefined,
     languages: profile.languages?.length ? profile.languages : undefined,
     availability: profile.availability || undefined,
-    weeklyAvailability: profile.weeklyAvailability?.length
-      ? profile.weeklyAvailability
-      : undefined,
     location: {
       city: profile.location?.city || undefined,
       state: profile.location?.state || undefined,

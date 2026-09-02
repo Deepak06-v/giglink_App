@@ -13,7 +13,6 @@ import {
   getEmployerName,
   getStatusLabel,
 } from '@/utils/formatJob';
-import { availabilityMatchBadge } from '@/utils/availabilityMatch';
 
 interface JobCardProps {
   job: JobListItem;
@@ -25,7 +24,6 @@ export function JobCard({ job, onPress }: JobCardProps) {
   const scheduleLine = formatScheduleRange(job.schedule);
   const timeLine = formatTimeRange(job.schedule);
   const durationLine = formatDuration(job.duration);
-  const matchBadge = availabilityMatchBadge(job.availabilityMatch);
 
   return (
     <Pressable onPress={onPress} accessibilityRole="button">
@@ -35,7 +33,6 @@ export function JobCard({ job, onPress }: JobCardProps) {
             {getCategoryLabel(job.category)}
           </Text>
           <View style={styles.badgesRow}>
-            {matchBadge ? <Badge label={t(matchBadge.labelKey)} variant={matchBadge.variant} /> : null}
             <Badge label={getStatusLabel(job.status)} variant={job.status === 'OPEN' ? 'brand' : 'default'} />
           </View>
         </View>

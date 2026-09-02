@@ -1,21 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ChevronRight } from '@/components/icons';
 import { DetailHeader } from '@/components/layout/DetailHeader';
 import { Screen } from '@/components/layout/Screen';
 import { Button, ErrorState, ImagePickerField, Input, Text } from '@/components/ui';
-import { colors, radius, sizes, spacing } from '@/constants/theme';
+import { colors, spacing } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { getWorkerProfile, updateWorkerProfile } from '@/lib/api/profiles';
 import { translate, type TranslationKey } from '@/lib/i18n';
-import { availabilitySummary } from '@/utils/availability';
 import type { WorkerProfile } from '@/types';
 
-const AVAILABILITY_OPTIONS = ['AVAILABLE', 'LIMITED', 'UNAVAILABLE'] as const;
+const AVAILABILITY_OPTIONS = ['AVAILABLE', 'UNAVAILABLE'] as const;
 const AVAILABILITY_LABEL_KEYS = {
   AVAILABLE: 'profile.availabilityAvailable',
-  LIMITED: 'profile.availabilityLimited',
   UNAVAILABLE: 'profile.availabilityUnavailable',
 } as const;
 
@@ -44,9 +41,6 @@ export default function EditProfileScreen() {
   const [availability, setAvailability] = useState<WorkerProfile['availability']>('AVAILABLE');
   const [skillsText, setSkillsText] = useState('');
   const [languagesText, setLanguagesText] = useState('');
-  const [weeklyAvailability, setWeeklyAvailability] = useState<
-    WorkerProfile['weeklyAvailability']
-  >([]);
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
@@ -63,7 +57,6 @@ export default function EditProfileScreen() {
       setAvailability(profile.availability ?? 'AVAILABLE');
       setSkillsText(profile.skills?.join(', ') ?? '');
       setLanguagesText(profile.languages?.join(', ') ?? '');
-      setWeeklyAvailability(profile.weeklyAvailability ?? []);
     } catch (err) {
       setError(getApiErrorMessage(err, translate('profile.unableLoadProfile')));
     } finally {
@@ -173,7 +166,7 @@ export default function EditProfileScreen() {
         placeholder={translate('profile.languagesPlaceholder')}
       />
 
-      <SectionTitle value="profile.sections.workingHours" />
+      <SectionTitle value="profile.sections.availability" />
       <View style={styles.availabilityRow}>
         {AVAILABILITY_OPTIONS.map((option) => {
           const selected = availability === option;
@@ -189,27 +182,6 @@ export default function EditProfileScreen() {
           );
         })}
       </View>
-
-      <Pressable
-        onPress={() => router.push('/profile/availability')}
-        style={styles.hoursEntry}
-        accessibilityRole="button"
-      >
-        <View style={styles.hoursEntryText}>
-          <Text variant="bodyMd" color="primary">
-            {translate('workingHours.title')}
-          </Text>
-          <Text variant="caption" color="secondary" numberOfLines={2}>
-            {availabilitySummary(weeklyAvailability)}
-          </Text>
-        </View>
-        <View style={styles.hoursEntryAction}>
-          <Text variant="bodyMd" color="brand">
-            {translate('common.edit')}
-          </Text>
-          <ChevronRight size={sizes.iconSm} color={colors.brand.primary} />
-        </View>
-      </Pressable>
     </Screen>
   );
 }
@@ -229,26 +201,5 @@ const styles = StyleSheet.create({
   },
   availabilityButton: {
     flexGrow: 1,
-  },
-  hoursEntry: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    backgroundColor: colors.surface.card,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-  },
-  hoursEntryText: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  hoursEntryAction: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
   },
 });

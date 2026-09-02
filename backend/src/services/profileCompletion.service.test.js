@@ -254,33 +254,24 @@ describe("profileCompletion invariants", () => {
     assert.deepEqual(result.missingFields, []);
   });
 
-  it("weeklyAvailability does not alter the 8-unit completion percentage", async () => {
-    // A fully complete worker with weekly hours set must remain 100%.
-    const withHours = {
-      ...FULL_WORKER,
-      weeklyAvailability: [
-        { day: 1, startTime: "09:00", endTime: "18:00" },
-        { day: 2, startTime: "09:00", endTime: "18:00" },
-      ],
-    };
-    mockWorker({ user: WORKER_USER, profile: withHours });
-    const result = await getWorkerProfileCompletion("w1");
-    assert.equal(result.complete, true);
-    assert.equal(result.percentage, 100);
-    assert.deepEqual(result.missingFields, []);
+  it("availability required; weeklyAvailability legacy field does not alter percentage", async () => {
+    // A worker completes with AVAILABLE (or UNAVAILABLE) — no working hours required.
+    mockWorker({ user: WORKER_USER, profile: FULL_WORKER });
+    const full = await getWorkerProfileCompletion("w1");
+    assert.equal(full.complete, true);
+    assert.equal(full.percentage, 100);
 
-    // Adding/removing weekly hours must not move a partial profile to 100% or back.
-    // Availability enum is still required: removing it drops to 7/8 regardless of hours.
-    const noEnumWithHours = {
+    // Removing the availability enum drops completion to 7/8 regardless of the
+    // legacy weeklyAvailability field (which is no longer part of the product).
+    const noEnum = {
       ...FULL_WORKER,
       availability: "",
       weeklyAvailability: [
         { day: 1, startTime: "09:00", endTime: "18:00" },
         { day: 2, startTime: "09:00", endTime: "18:00" },
-        { day: 3, startTime: "09:00", endTime: "18:00" },
       ],
     };
-    mockWorker({ user: WORKER_USER, profile: noEnumWithHours });
+    mockWorker({ user: WORKER_USER, profile: noEnum });
     const partial = await getWorkerProfileCompletion("w1");
     assert.equal(partial.complete, false);
     assert.equal(partial.percentage, Math.round((7 / 8) * 100));

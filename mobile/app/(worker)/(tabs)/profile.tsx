@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Image, RefreshControl, StyleSheet, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Screen } from '@/components/layout/Screen';
 import {
   Badge,
@@ -18,7 +18,6 @@ import {
   Briefcase,
   CheckCircle2,
   ClipboardList,
-  Clock,
   FileText,
   LogOut,
   User,
@@ -30,11 +29,9 @@ import { getApiErrorMessage } from '@/lib/api/errors';
 import { getWorkerProfile } from '@/lib/api/profiles';
 import { translate, type TranslationKey } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
-import { availabilitySummary } from '@/utils/availability';
 import {
   workerApplicationsTabRoute,
   workerAssignmentsTabRoute,
-  workerAvailabilityRoute,
   workerEditProfileRoute,
   workerNotificationsRoute,
 } from '@/utils/routing';
@@ -47,6 +44,7 @@ interface ProfileStats {
 }
 
 type WorkerMissingField =
+  | 'NAME'
   | 'PROFILE_PHOTO'
   | 'SKILLS'
   | 'EXPERIENCE'
@@ -56,6 +54,7 @@ type WorkerMissingField =
   | 'AVAILABILITY';
 
 const COMPLETION_HINTS: Record<WorkerMissingField, TranslationKey> = {
+  NAME: 'profile.completion.addName',
   PROFILE_PHOTO: 'profile.completion.addPhoto',
   SKILLS: 'profile.completion.addSkills',
   EXPERIENCE: 'profile.completion.addExperience',
@@ -110,10 +109,10 @@ export default function WorkerProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadProfile = useCallback(async (mode: 'initial' | 'refresh' = 'initial') => {
+  const loadProfile = useCallback(async (mode: 'initial' | 'refresh' | 'focus' = 'initial') => {
     if (mode === 'initial') {
       setLoading(true);
-    } else {
+    } else if (mode === 'refresh') {
       setRefreshing(true);
     }
     setError(null);
@@ -141,9 +140,11 @@ export default function WorkerProfileScreen() {
     }
   }, []);
 
-  useEffect(() => {
-    void loadProfile();
-  }, [loadProfile]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadProfile('focus');
+    }, [loadProfile]),
+  );
 
   const initials = user?.name
     ?.split(' ')
@@ -184,6 +185,7 @@ export default function WorkerProfileScreen() {
       'PHONE',
       'LOCATION',
       'AVAILABILITY',
+      'NAME',
     ];
     const firstMissing = ordered.find((field) => missingFields.includes(field));
     return firstMissing ? COMPLETION_HINTS[firstMissing] : COMPLETION_HINTS.SKILLS;
@@ -201,12 +203,10 @@ export default function WorkerProfileScreen() {
     switch (profile?.availability) {
       case 'AVAILABLE':
         return <Badge label={translate('profile.availabilityAvailable')} variant="success" />;
-      case 'LIMITED':
-        return <Badge label={translate('profile.availabilityLimited')} variant="warning" />;
       case 'UNAVAILABLE':
         return <Badge label={translate('profile.availabilityUnavailable')} variant="error" />;
       default:
-        return <Badge label={translate('workingHours.title')} />;
+        return <Badge label={translate('profile.completion.setAvailability')} />;
     }
   })();
 
@@ -243,15 +243,29 @@ export default function WorkerProfileScreen() {
 
       {completion ? (
         <Card style={styles.completionCard}>
-          <CompletionRing percentage={completionPct} label={translate('profile.completion.label')} />
-          <View style={styles.completionText}>
-            <Text variant="bodyLg" color="primary">
-              {translate('profile.completion.percentComplete', { percentage: completionPct })}
-            </Text>
-            <Text variant="caption" color="secondary" style={styles.completionHint}>
-              {translate(nextHint)}
-            </Text>
+          <View style={styles.completionHeader}>
+            <CompletionRing percentage={completionPct} label={translate('profile.completion.label')} />
+            <View style={styles.completionText}>
+              <Text variant="bodyLg" color="primary">
+                {translate('profile.completion.percentComplete', { percentage: completionPct })}
+              </Text>
+              <Text variant="caption" color="secondary" style={styles.completionHint}>
+                {translate(nextHint)}
+              </Text>
+            </View>
           </View>
+          {missingFields.length > 0 ? (
+            <View style={styles.missingList}>
+              {missingFields.map((field) => (
+                <View key={field} style={styles.missingRow}>
+                  <View style={styles.missingDot} />
+                  <Text variant="bodyMd" color="secondary" style={styles.missingText}>
+                    {translate(COMPLETION_HINTS[field as WorkerMissingField] ?? 'profile.completion.addName')}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
           <Button
             label={translate('profile.editProfile')}
             variant="secondary"
@@ -282,16 +296,6 @@ export default function WorkerProfileScreen() {
           subtitle={skillsLabel}
           showChevron
           onPress={() => router.push(workerEditProfileRoute())}
-        />
-        <View style={styles.divider} />
-        <StatRow
-          icon={Clock}
-          iconColor={colors.text.secondary}
-          iconBackground={colors.surface.elevated}
-          title={translate('profile.sections.workingHours')}
-          subtitle={availabilitySummary(profile?.weeklyAvailability)}
-          showChevron
-          onPress={() => router.push(workerAvailabilityRoute())}
         />
       </Card>
 
@@ -385,10 +389,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   completionCard: {
+    gap: spacing.lg,
+    marginBottom: spacing['2xl'],
+  },
+  completionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.lg,
-    marginBottom: spacing['2xl'],
   },
   completionText: {
     flex: 1,
@@ -399,7 +406,24 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   completionAction: {
-    alignSelf: 'center',
+    alignSelf: 'flex-start',
+  },
+  missingList: {
+    gap: spacing.xs,
+  },
+  missingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  missingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.brand.primary,
+  },
+  missingText: {
+    flex: 1,
   },
   sectionHeader: {
     marginBottom: spacing.md,

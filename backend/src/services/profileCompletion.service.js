@@ -43,9 +43,10 @@ const buildCompletion = (fields) => {
  *  - if the User or WorkerProfile document does not exist, completion is 0%.
  *  - User.email is never required (phone-authenticated workers may not have one).
  *  - `experience` may legitimately be "No prior experience"; any non-empty value counts.
- *  - `availability` (the existing AVAILABLE/LIMITED/UNAVAILABLE enum) is used as the
- *    Phase-1 availability proxy. Detailed weekly working-hours data is NOT represented in
- *    the current schema and is intentionally deferred to a future model phase.
+ *  - `availability` (the existing AVAILABLE/UNAVAILABLE enum) is used as the
+ *    availability requirement. Detailed weekly working-hours data is intentionally
+ *    NOT part of profile completion — a worker reaches 100% without configuring
+ *    any working hours.
  *
  * Logical completion units (8):
  *  NAME, PROFILE_PHOTO, BIO, PHONE, LOCATION (city+state+pincode), SKILLS, EXPERIENCE, AVAILABILITY

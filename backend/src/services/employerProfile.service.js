@@ -1,7 +1,7 @@
 import EmployerProfile from "../models/EmployerProfile.js";
 
 const getEmployerProfile = async (userId) => {
-  const profile = await EmployerProfile.findOne({ user: userId });
+  const profile = await EmployerProfile.findOne({ user: userId }).lean();
   if (!profile) {
     return {
       user: userId,
@@ -26,7 +26,7 @@ const createOrUpdateEmployerProfile = async (userId, updateData) => {
     { user: userId },
     { $set: updateData },
     { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
-  );
+  ).lean();
 
   return profile;
 };

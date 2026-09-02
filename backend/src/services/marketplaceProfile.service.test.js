@@ -24,11 +24,6 @@ const FULL_WORKER = {
   experience: "2 years in events",
   languages: ["English", "Hindi"],
   availability: "AVAILABLE",
-  weeklyAvailability: [
-    { day: 1, startTime: "09:00", endTime: "18:00" },
-    { day: 2, startTime: "09:00", endTime: "18:00" },
-    { day: 5, startTime: "10:00", endTime: "14:00" },
-  ],
 };
 
 const FULL_EMPLOYER = {
@@ -97,19 +92,17 @@ describe("getWorkerMarketplaceProfile", () => {
     assert.equal(result.experience, FULL_WORKER.experience);
     assert.deepEqual(result.languages, FULL_WORKER.languages);
     assert.equal(result.availability, "AVAILABLE");
-    assert.deepEqual(result.weeklyAvailability, FULL_WORKER.weeklyAvailability);
     assert.deepEqual(result.location, { city: "Mumbai", state: "Maharashtra" });
     assert.deepEqual(result.rating, RATING);
   });
 
-  it("never exposes phone, email, pincode or address, but includes weeklyAvailability", async () => {
+  it("never exposes phone, email, pincode or address", async () => {
     mockWorker({ user: WORKER_USER, profile: FULL_WORKER, rating: RATING });
     const result = await getWorkerMarketplaceProfile("aaaaaaaaaaaaaaaaaaaaaaaa");
     assert.equal(result.phone, undefined);
     assert.equal(result.email, undefined);
     assert.equal(result.location.pincode, undefined);
     assert.equal(result.location.address, undefined);
-    assert.deepEqual(result.weeklyAvailability, FULL_WORKER.weeklyAvailability);
     assert.deepEqual(Object.keys(result).sort(), [
       "availability",
       "bio",
@@ -121,22 +114,11 @@ describe("getWorkerMarketplaceProfile", () => {
       "profileImage",
       "rating",
       "skills",
-      "weeklyAvailability",
     ]);
   });
 
-  it("omits weeklyAvailability when the worker has no schedule configured", async () => {
-    const profile = {
-      ...FULL_WORKER,
-      weeklyAvailability: [],
-    };
-    mockWorker({ user: WORKER_USER, profile, rating: RATING });
-    const result = await getWorkerMarketplaceProfile("aaaaaaaaaaaaaaaaaaaaaaaa");
-    assert.equal(result.weeklyAvailability, undefined);
-  });
-
   it("omits empty optional fields", async () => {
-    const profile = { user: "aaaaaaaaaaaaaaaaaaaaaaaa", profileImage: "", bio: "", skills: [], availability: "LIMITED" };
+    const profile = { user: "aaaaaaaaaaaaaaaaaaaaaaaa", profileImage: "", bio: "", skills: [], availability: "UNAVAILABLE" };
     mockWorker({ user: { _id: "aaaaaaaaaaaaaaaaaaaaaaaa", name: "Rahul" }, profile, rating: NO_RATING });
     const result = await getWorkerMarketplaceProfile("aaaaaaaaaaaaaaaaaaaaaaaa");
     assert.equal(result.profileImage, undefined);
@@ -144,7 +126,7 @@ describe("getWorkerMarketplaceProfile", () => {
     assert.equal(result.skills, undefined);
     assert.equal(result.languages, undefined);
     assert.equal(result.experience, undefined);
-    assert.equal(result.availability, "LIMITED");
+    assert.equal(result.availability, "UNAVAILABLE");
   });
 
   it("handles a missing user (falls back to userId) while still returning the profile", async () => {

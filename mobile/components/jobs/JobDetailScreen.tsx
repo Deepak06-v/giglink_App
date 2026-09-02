@@ -24,7 +24,6 @@ import {
   getStatusLabel,
 } from '@/utils/formatJob';
 import { openInMaps } from '@/utils/maps';
-import { availabilityMatchBadge } from '@/utils/availabilityMatch';
 import { useTranslation } from '@/lib/i18n';
 import { useProtectedAction } from '@/hooks/useProtectedAction';
 import {
@@ -201,7 +200,6 @@ export function JobDetailScreen({ jobId }: JobDetailScreenProps) {
   const isEmployerObj = typeof employerObj !== 'string';
   const employerId = isEmployerObj ? (employerObj.id ?? employerObj._id) : undefined;
   const canViewEmployer = isAuthenticated && Boolean(employerId);
-  const matchBadge = availabilityMatchBadge(job.availabilityMatch);
 
   const footer = !isAuthenticated ? (
     <View style={styles.applyFooter}>
@@ -268,9 +266,6 @@ export function JobDetailScreen({ jobId }: JobDetailScreenProps) {
           </Text>
         )}
         <Badge label={getStatusLabel(job.status)} variant={job.status === 'OPEN' ? 'brand' : 'default'} />
-        {matchBadge ? (
-          <Badge label={t(matchBadge.labelKey)} variant={matchBadge.variant} />
-        ) : null}
       </View>
 
       {completionHintBlock}

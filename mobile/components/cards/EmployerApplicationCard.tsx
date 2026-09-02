@@ -7,7 +7,6 @@ import type { BadgeVariant } from '@/components/ui/Badge';
 import type { Application, ApplicationStatus, ApplicationWorker } from '@/types';
 import { formatAppliedDate, getStatusLabel } from '@/utils/formatJob';
 import { translate } from '@/lib/i18n';
-import { availabilityMatchBadge } from '@/utils/availabilityMatch';
 
 function statusVariant(status: ApplicationStatus): BadgeVariant {
   switch (status) {
@@ -54,7 +53,6 @@ export function EmployerApplicationCard({ application, onPress, onViewProfile }:
   const job = typeof application.job === 'string' ? null : application.job;
   const email = getWorkerEmail(application.worker);
   const workerId = getWorkerId(application.worker);
-  const matchBadge = availabilityMatchBadge(application.availabilityMatch);
 
   return (
     <Pressable onPress={onPress} accessibilityRole="button">
@@ -79,7 +77,6 @@ export function EmployerApplicationCard({ application, onPress, onViewProfile }:
             ) : null}
           </View>
           <View style={styles.badgesCol}>
-            {matchBadge ? <Badge label={t(matchBadge.labelKey)} variant={matchBadge.variant} /> : null}
             <Badge label={getStatusLabel(application.status)} variant={statusVariant(application.status)} />
           </View>
         </View>

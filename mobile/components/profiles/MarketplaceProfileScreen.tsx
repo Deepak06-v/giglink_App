@@ -9,7 +9,6 @@ import { Badge, Card, EmptyState, ErrorState, Text } from '@/components/ui';
 import { colors, spacing } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { translate } from '@/lib/i18n';
-import { summarizeWeeklyAvailability } from '@/utils/availability';
 import type {
   EmployerMarketplaceProfile,
   WorkerMarketplaceProfile,
@@ -26,16 +25,14 @@ interface MarketplaceProfileScreenProps {
 
 const AVAILABILITY_VARIANT: Record<
   string,
-  'success' | 'warning' | 'default'
+  'success' | 'default'
 > = {
   AVAILABLE: 'success',
-  LIMITED: 'warning',
   UNAVAILABLE: 'default',
 };
 
-const AVAILABILITY_LABEL_KEYS: Record<string, 'profile.availabilityAvailable' | 'profile.availabilityLimited' | 'profile.availabilityUnavailable'> = {
+const AVAILABILITY_LABEL_KEYS: Record<string, 'profile.availabilityAvailable' | 'profile.availabilityUnavailable'> = {
   AVAILABLE: 'profile.availabilityAvailable',
-  LIMITED: 'profile.availabilityLimited',
   UNAVAILABLE: 'profile.availabilityUnavailable',
 };
 
@@ -208,19 +205,6 @@ function WorkerSections({ profile }: { profile: WorkerMarketplaceProfile }) {
           <Text variant="bodyMd" color="primary">
             {profile.languages.join(', ')}
           </Text>
-        </Card>
-      ) : null}
-
-      {profile.weeklyAvailability?.length ? (
-        <Card style={styles.section}>
-          <Text variant="label" color="secondary">
-            {translate('workingHours.weeklyAvailability')}
-          </Text>
-          {summarizeWeeklyAvailability(profile.weeklyAvailability).map((line) => (
-            <Text key={line} variant="bodyMd" color="primary">
-              {line}
-            </Text>
-          ))}
         </Card>
       ) : null}
     </>

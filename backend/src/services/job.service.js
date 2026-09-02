@@ -2,7 +2,6 @@ import Job from "../models/Job.js";
 import Assignment from "../models/Assignment.js";
 import Application from "../models/Application.js";
 import EmployerProfile from "../models/EmployerProfile.js";
-import WorkerProfile from "../models/WorkerProfile.js";
 import User from "../models/User.js";
 import {
   calculateNumberOfDays,
@@ -12,12 +11,6 @@ import {
   buildScheduleInfo,
 } from "../utils/schedule.js";
 import { getEmployerProfileCompletion } from "./profileCompletion.service.js";
-import {
-  matchWorkerToJob,
-  MATCH,
-  PARTIAL,
-  CONFLICT,
-} from "./availabilityMatching.service.js";
 
 const VALID_CATEGORIES = [
   "EVENT_STAFF",
@@ -42,7 +35,6 @@ const VALID_SORT_OPTIONS = [
 ];
 
 const MAX_LIMIT = 50;
-const MAX_FIT_CANDIDATES = 500;
 
 /**
  * Enrich job response with calculated schedule info
@@ -263,53 +255,10 @@ const buildSort = (sortOption) => {
 };
 
 /**
- * Rank an availabilityMatch into a coarse fit tier used for deterministic
- * best-match ordering. Lower is better: MATCH=0, PARTIAL=1, CONFLICT=2, and
- * UNKNOWN/null (no configured schedule) =3. Ranking never omits a job; it only
- * orders jobs with a weaker fit after those with a stronger fit.
- */
-const matchStatusTier = (match) => {
-  if (!match) return 3;
-  switch (match.status) {
-    case MATCH:
-      return 0;
-    case PARTIAL:
-      return 1;
-    case CONFLICT:
-      return 2;
-    default:
-      return 3;
-  }
-};
-
-const jobStartDateValue = (job) => {
-  const raw = job?.schedule?.startDate;
-  if (!raw) return 0;
-  const t = new Date(raw).getTime();
-  return Number.isNaN(t) ? 0 : t;
-};
-
-/**
- * Deterministic best-match comparator. Orders by fit tier, then coverage %, then
- * job start date (soonest first), then _id as a stable tiebreaker.
- */
-const bestMatchComparator = (a, b) => {
-  const tierDiff = matchStatusTier(a.match) - matchStatusTier(b.match);
-  if (tierDiff !== 0) return tierDiff;
-  const coverageDiff =
-    (b.match?.coveragePercent || 0) - (a.match?.coveragePercent || 0);
-  if (coverageDiff !== 0) return coverageDiff;
-  const dateDiff = jobStartDateValue(a.job) - jobStartDateValue(b.job);
-  if (dateDiff !== 0) return dateDiff;
-  return String(a.job._id).localeCompare(String(b.job._id));
-};
-
-/**
  * Enrich a page of jobs with worker-specific state (application/assignment
- * status, capacity, and availability match). Shared by the base discovery path
- * and the worker fit (availableOnly / best_match) path so the two never drift.
+ * status, capacity). Shared by all worker job-display paths.
  */
-const enrichJobsForWorker = async (jobs, workerId, workerAvailability) => {
+const enrichJobsForWorker = async (jobs, workerId) => {
   if (!jobs || jobs.length === 0) {
     return [];
   }
@@ -355,9 +304,6 @@ const enrichJobsForWorker = async (jobs, workerId, workerAvailability) => {
       hasApplied,
       applicationStatus,
       isAssigned,
-      availabilityMatch: workerAvailability
-        ? matchWorkerToJob(job, workerAvailability)
-        : null,
     });
   });
 };
@@ -464,26 +410,6 @@ const getJobById = async (jobId) => {
   return enrichJobWithDuration(job);
 };
 
-/**
- * Fetch the worker's recurring weekly availability (an array of day/window
- * entries, or null when none is configured). Used for availability matching.
- * Never throws; a missing profile yields null.
- */
-const getWorkerAvailability = async (workerId) => {
-  if (!workerId) {
-    return null;
-  }
-  const profile = await WorkerProfile.findOne({ user: workerId })
-    .select("weeklyAvailability")
-    .lean();
-  if (!profile) {
-    return null;
-  }
-  return profile.weeklyAvailability && profile.weeklyAvailability.length > 0
-    ? profile.weeklyAvailability
-    : null;
-};
-
 const getPublicJobs = async (query = {}, workerId = null) => {
   const page = Math.max(1, parseInt(query.page) || 1);
   const limit = Math.min(MAX_LIMIT, Math.max(1, parseInt(query.limit) || 20));
@@ -495,92 +421,30 @@ const getPublicJobs = async (query = {}, workerId = null) => {
     throw error;
   }
 
-  const availableOnly = query.availableOnly === "true";
-  const bestMatch = sortOption === "best_match";
-
-  // The availability-fit features require a signed-in worker. Without one they
-  // are inert: best_match falls back to newest and availableOnly is ignored,
-  // so no job is ever silently hidden.
-  const useFitPath = workerId && (availableOnly || bestMatch);
-
   const filter = buildDiscoveryFilter(query);
 
-  if (!useFitPath) {
-    const sort = buildSort(sortOption);
-    const skip = (page - 1) * limit;
+  // `best_match` previously ranked jobs by a worker's weekly schedule, which no
+  // longer exists. It now falls back to the default (newest) ordering and never
+  // omits a job. `availableOnly` previously filtered by schedule overlap; with
+  // no schedule concept it is accepted but inert, so it never silently hides a
+  // job. A currently-available worker (availability === AVAILABLE) is the only
+  // availability state and does not exclude any jobs from browsing.
+  const sort = buildSort(sortOption);
+  const skip = (page - 1) * limit;
 
-    const [jobs, total] = await Promise.all([
-      Job.find(filter)
-        .sort(sort)
-        .skip(skip)
-        .limit(limit)
-        .populate("employer", "name")
-        .lean(),
-      Job.countDocuments(filter),
-    ]);
+  const [jobs, total] = await Promise.all([
+    Job.find(filter)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .populate("employer", "name")
+      .lean(),
+    Job.countDocuments(filter),
+  ]);
 
-    const enrichedJobs = workerId
-      ? await enrichJobsForWorker(jobs, workerId, await getWorkerAvailability(workerId))
-      : await enrichJobsPublic(jobs);
-
-    return {
-      jobs: enrichedJobs,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      },
-    };
-  }
-
-  // Worker fit path (availableOnly and/or best_match). Fetch open-job candidates
-  // (bounded), filter/order by fit in memory (deterministic), then slice for the
-  // requested page so pagination stays consistent with the returned ordering.
-  // This path is opt-in and never hides a job unless the worker explicitly
-  // enables availableOnly.
-  const workerAvailability = await getWorkerAvailability(workerId);
-
-  const candidates = await Job.find(filter)
-    .select("_id schedule startDate")
-    .limit(MAX_FIT_CANDIDATES)
-    .lean();
-
-  const scored = candidates.map((job) => ({
-    job,
-    match: workerAvailability ? matchWorkerToJob(job, workerAvailability) : null,
-  }));
-
-  let ordered = scored;
-  if (bestMatch) {
-    ordered = [...scored].sort(bestMatchComparator);
-  }
-
-  let eligible = ordered;
-  if (availableOnly) {
-    // Keep only jobs with a confirmed overlap (MATCH or PARTIAL). With no
-    // configured schedule all jobs are UNKNOWN and none pass — an empty, clearly
-    // labelled result rather than a hidden feed.
-    eligible = ordered.filter(
-      ({ match }) => match && (match.status === MATCH || match.status === PARTIAL)
-    );
-  }
-
-  const total = eligible.length;
-  const slice = eligible.slice((page - 1) * limit, (page - 1) * limit + limit);
-  const pageJobs = slice.map((entry) => entry.job);
-
-  let enrichedJobs;
-  if (bestMatch) {
-    // Preserve best-match order on the returned jobs.
-    const enriched = await enrichJobsForWorker(pageJobs, workerId, workerAvailability);
-    const byId = new Map(enriched.map((job) => [job._id.toString(), job]));
-    enrichedJobs = pageJobs
-      .map((job) => byId.get(job._id.toString()))
-      .filter(Boolean);
-  } else {
-    enrichedJobs = await enrichJobsForWorker(pageJobs, workerId, workerAvailability);
-  }
+  const enrichedJobs = workerId
+    ? await enrichJobsForWorker(jobs, workerId)
+    : await enrichJobsPublic(jobs);
 
   return {
     jobs: enrichedJobs,
@@ -603,12 +467,10 @@ const getJobByIdPublic = async (jobId, workerId = null) => {
 
   let application = null;
   let assignment = null;
-  let workerAvailability = null;
   if (workerId) {
-    [application, assignment, workerAvailability] = await Promise.all([
+    [application, assignment] = await Promise.all([
       Application.findOne({ job: jobId, worker: workerId }).lean(),
       Assignment.findOne({ job: jobId, worker: workerId }).lean(),
-      getWorkerAvailability(workerId),
     ]);
   }
 
@@ -671,9 +533,6 @@ const getJobByIdPublic = async (jobId, workerId = null) => {
     ...job,
     employer: employerInfo,
     ...(applicationState && { applicationState }),
-    availabilityMatch: workerAvailability
-      ? matchWorkerToJob(job, workerAvailability)
-      : null,
   });
 };
 

@@ -34,15 +34,13 @@ const workerProfileSchema = new mongoose.Schema(
     languages: [{ type: String, trim: true }],
     availability: {
       type: String,
-      enum: ["AVAILABLE", "LIMITED", "UNAVAILABLE"],
+      enum: ["AVAILABLE", "UNAVAILABLE"],
       default: "AVAILABLE",
     },
-    // Recurring weekly working hours. Each entry is one window for a day of the
-    // week (day: 0=Sunday ... 6=Saturday). Multiple windows per day are allowed
-    // (up to MAX_WINDOWS_PER_DAY in profile.validator.js); the array is indexed
-    // by weekday in availabilityMatching.service.js. Times use the application's
-    // 24-hour HH:MM convention in local time. An empty array (or absent field)
-    // means no weekly schedule configured.
+    // DEPRECATED (legacy): recurring weekly working hours. The product no longer
+    // uses a weekly schedule — a worker is simply AVAILABLE or UNAVAILABLE. This
+    // column is retained only to avoid a destructive migration on existing
+    // records; application code no longer reads or writes it.
     weeklyAvailability: [
       {
         day: {

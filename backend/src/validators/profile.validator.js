@@ -1,9 +1,5 @@
 import { body, validationResult } from "express-validator";
 
-// Maximum number of weekly-availability windows permitted per weekday. Kept
-// small to bound complexity while supporting multiple slots per day (Phase 8).
-export const MAX_WINDOWS_PER_DAY = 3;
-
 const validate = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -72,79 +68,8 @@ const workerProfileUpdateValidation = [
     .withMessage("Each language must be less than 50 characters"),
   body("availability")
     .optional()
-    .isIn(["AVAILABLE", "LIMITED", "UNAVAILABLE"])
-    .withMessage("Availability must be AVAILABLE, LIMITED, or UNAVAILABLE"),
-  body("weeklyAvailability")
-    .optional()
-    .isArray()
-    .withMessage("Weekly availability must be an array"),
-  body("weeklyAvailability.*.day")
-    .optional()
-    .isInt({ min: 0, max: 6 })
-    .withMessage("Weekly availability day must be an integer between 0 and 6"),
-  body("weeklyAvailability.*.startTime")
-    .optional()
-    .matches(/^\d{1,2}:\d{2}$/)
-    .withMessage("Weekly availability start time must be in HH:MM format (24-hour)")
-    .custom((value) => {
-      if (value === undefined || value === null) {
-        return true;
-      }
-      const [hours, minutes] = value.split(":").map(Number);
-      if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-        throw new Error("Invalid start time values");
-      }
-      return true;
-    }),
-  body("weeklyAvailability.*.endTime")
-    .optional()
-    .matches(/^\d{1,2}:\d{2}$/)
-    .withMessage("Weekly availability end time must be in HH:MM format (24-hour)")
-    .custom((value) => {
-      if (value === undefined || value === null) {
-        return true;
-      }
-      const [hours, minutes] = value.split(":").map(Number);
-      if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-        throw new Error("Invalid end time values");
-      }
-      return true;
-    }),
-  body("weeklyAvailability").custom((value, { req }) => {
-    if (!Array.isArray(value) || value.length === 0) {
-      return true;
-    }
-
-    const maxWindowsPerDay = MAX_WINDOWS_PER_DAY;
-    const windowCountByDay = new Map();
-    for (const window of value) {
-      if (!window || typeof window !== "object") {
-        throw new Error("Each weekly availability entry must be an object");
-      }
-
-      const { day, startTime, endTime } = window;
-
-      if (typeof day !== "number" || day < 0 || day > 6 || !Number.isInteger(day)) {
-        throw new Error("Invalid weekly availability entry: day must be an integer between 0 and 6");
-      }
-
-      const count = windowCountByDay.get(day) || 0;
-      if (count >= maxWindowsPerDay) {
-        throw new Error(
-          `Too many weekly availability windows for day ${day}; at most ${maxWindowsPerDay} allowed`
-        );
-      }
-      windowCountByDay.set(day, count + 1);
-
-      const hasStart = typeof startTime === "string" && startTime.trim().length > 0;
-      const hasEnd = typeof endTime === "string" && endTime.trim().length > 0;
-      if (hasStart !== hasEnd) {
-        throw new Error(`Weekly availability entry for day ${day} must have both start and end time`);
-      }
-    }
-
-    return true;
-  }),
+    .isIn(["AVAILABLE", "UNAVAILABLE"])
+    .withMessage("Availability must be AVAILABLE or UNAVAILABLE"),
   validate,
 ];
 

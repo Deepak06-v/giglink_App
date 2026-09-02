@@ -255,7 +255,7 @@ function applicationQuery(applications, workerIds = []) {
   return q;
 }
 
-describe("employer application availability match", () => {
+describe("employer application views never include schedule match", () => {
   beforeEach(() => {
     mock.restoreAll();
   });
@@ -264,98 +264,59 @@ describe("employer application availability match", () => {
     mock.restoreAll();
   });
 
-  it("getEmployerApplicationsForJob attaches a MATCH availabilityMatch", async () => {
-    const wd = new Date("2026-09-02").getDay();
-    const job = {
-      _id: "job1",
-      employer: { toString: () => EMPLOYER_ID },
-      schedule: JOB_SCHEDULE,
-    };
-    const applications = [
-      { _id: "a1", worker: { _id: "w1", name: "Worker One" }, job: "job1", status: "PENDING" },
-    ];
-    mock.method(Job, "findById", async () => job);
-    mock.method(Application, "find", () => applicationQuery(applications, ["w1"]));
-    mock.method(Application, "countDocuments", async () => 1);
+  const wd = new Date("2026-09-02").getDay();
+  const applications = [
+    { _id: "a1", worker: { _id: "w1", name: "Worker One" }, job: "job1", status: "PENDING" },
+  ];
+  // A worker with a legacy weekly schedule is still accepted in storage, but the
+  // employer application views must never read it or compute an availabilityMatch.
+  const legacyWorker = () =>
     mock.method(WorkerProfile, "find", () => ({
       select: () => ({
         lean: async () => [{ user: "w1", weeklyAvailability: [{ day: wd, startTime: "09:00", endTime: "18:00" }] }],
       }),
     }));
 
-    const result = await getEmployerApplicationsForJob("job1", EMPLOYER_ID, 1, 20);
-
-    assert.equal(result.applications[0].availabilityMatch.status, "MATCH");
-    assert.equal(result.applications[0].availabilityMatch.coveragePercent, 100);
-  });
-
-  it("getEmployerApplicationsForJob leaves availabilityMatch null when worker has no schedule", async () => {
-    const job = {
-      _id: "job1",
-      employer: { toString: () => EMPLOYER_ID },
-      schedule: JOB_SCHEDULE,
-    };
-    const applications = [
-      { _id: "a1", worker: { _id: "w1", name: "Worker One" }, job: "job1", status: "PENDING" },
-    ];
+  it("getEmployerApplicationsForJob does not attach availabilityMatch", async () => {
+    const job = { _id: "job1", employer: { toString: () => EMPLOYER_ID }, schedule: JOB_SCHEDULE };
     mock.method(Job, "findById", async () => job);
     mock.method(Application, "find", () => applicationQuery(applications, ["w1"]));
     mock.method(Application, "countDocuments", async () => 1);
-    mock.method(WorkerProfile, "find", () => ({
-      select: () => ({ lean: async () => [{ user: "w1", weeklyAvailability: [] }] }),
-    }));
+    legacyWorker();
 
     const result = await getEmployerApplicationsForJob("job1", EMPLOYER_ID, 1, 20);
 
-    assert.equal(result.applications[0].availabilityMatch, null);
+    assert.equal(result.applications[0].availabilityMatch, undefined);
+    assert.equal(result.applications[0]._id, "a1");
   });
 
-  it("getEmployerAllApplications attaches availabilityMatch per application/job", async () => {
-    const wd = new Date("2026-09-02").getDay();
+  it("getEmployerAllApplications does not attach availabilityMatch", async () => {
     const employerJob = { _id: "job1", schedule: JOB_SCHEDULE };
-    const applications = [
-      { _id: "a1", worker: { _id: "w1" }, job: { _id: "job1" }, status: "PENDING" },
-    ];
-    mock.method(Job, "find", () => ({
-      select: async () => [employerJob],
-    }));
+    mock.method(Job, "find", () => ({ select: async () => [employerJob] }));
     mock.method(Application, "find", () => applicationQuery(applications, ["w1"]));
     mock.method(Application, "countDocuments", async () => 1);
-    mock.method(WorkerProfile, "find", () => ({
-      select: () => ({
-        lean: async () => [{ user: "w1", weeklyAvailability: [{ day: wd, startTime: "09:00", endTime: "18:00" }] }],
-      }),
-    }));
+    legacyWorker();
 
     const result = await getEmployerAllApplications(EMPLOYER_ID, 1, 20);
 
-    assert.equal(result.applications[0].availabilityMatch.status, "MATCH");
+    assert.equal(result.applications[0].availabilityMatch, undefined);
   });
 
-  it("getEmployerApplicationById attaches availabilityMatch", async () => {
-    const wd = new Date("2026-09-02").getDay();
+  it("getEmployerApplicationById does not attach availabilityMatch", async () => {
     const application = {
       _id: "a1",
       worker: { _id: "w1", name: "Worker One" },
-      job: {
-        _id: "job1",
-        employer: { _id: EMPLOYER_ID },
-        schedule: JOB_SCHEDULE,
-      },
+      job: { _id: "job1", employer: { _id: EMPLOYER_ID }, schedule: JOB_SCHEDULE },
       status: "PENDING",
     };
     mock.method(Application, "findById", () => ({
       populate: () => ({ populate: () => ({ popupulate: 0, ...application }) }),
     }));
-    mock.method(WorkerProfile, "find", () => ({
-      select: () => ({
-        lean: async () => [{ user: "w1", weeklyAvailability: [{ day: wd, startTime: "09:00", endTime: "18:00" }] }],
-      }),
-    }));
+    legacyWorker();
 
     const result = await getEmployerApplicationById("a1", EMPLOYER_ID);
 
-    assert.equal(result.availabilityMatch.status, "MATCH");
+    assert.equal(result.availabilityMatch, undefined);
     assert.equal(result._id, "a1");
   });
 });

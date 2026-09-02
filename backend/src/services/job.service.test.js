@@ -310,15 +310,7 @@ function chain(final) {
   return q;
 }
 
-function mockWorkerAvailability(weeklyAvailability) {
-  mock.method(
-    WorkerProfile,
-    "findOne",
-    () => ({ select: () => ({ lean: async () => ({ user: WORKER_ID, weeklyAvailability }) }) })
-  );
-}
-
-describe("getJobByIdPublic availability match", () => {
+describe("removed schedule-matching is inert", () => {
   beforeEach(() => {
     mock.restoreAll();
   });
@@ -336,7 +328,25 @@ describe("getJobByIdPublic availability match", () => {
     schedule: JOB_SCHEDULE,
   };
 
-  function setup() {
+  function basePublicJobsSetup(extraJobs = []) {
+    mock.method(Job, "find", () => chain([job, ...extraJobs]));
+    mock.method(Job, "countDocuments", async () => 1 + extraJobs.length);
+    mock.method(Application, "find", () => chain([]));
+    mock.method(Assignment, "find", () => chain([]));
+    mock.method(Assignment, "aggregate", async () => []);
+  }
+
+  // A WorkerProfile with a legacy schedule is still accepted in storage, but
+  // the job feed must NOT read it or compute any availabilityMatch.
+  function mockLegacyAvailabilitySchedule() {
+    mock.method(
+      WorkerProfile,
+      "findOne",
+      () => ({ select: () => ({ lean: async () => ({ user: WORKER_ID, weeklyAvailability: [{ day: 3, startTime: "09:00", endTime: "18:00" }] }) }) })
+    );
+  }
+
+  it("getJobByIdPublic never attaches availabilityMatch and does not read the worker schedule", async () => {
     mock.method(Job, "findById", () => ({ lean: async () => ({ ...job }) }));
     mock.method(
       EmployerProfile,
@@ -345,225 +355,82 @@ describe("getJobByIdPublic availability match", () => {
     );
     mock.method(Application, "findOne", () => ({ lean: async () => null }));
     mock.method(Assignment, "findOne", () => ({ lean: async () => null }));
-  }
-
-  it("attaches a MATCH availabilityMatch for a fully available worker", async () => {
-    setup();
-    const wd = new Date("2026-09-02").getDay();
-    mockWorkerAvailability([{ day: wd, startTime: "09:00", endTime: "18:00" }]);
-
-    const result = await getJobByIdPublic("job1", WORKER_ID);
-
-    assert.equal(result.availabilityMatch.status, "MATCH");
-    assert.equal(result.availabilityMatch.coveragePercent, 100);
-  });
-
-  it("attaches a CONFLICT availabilityMatch when the worker is unavailable", async () => {
-    setup();
-    const wd = new Date("2026-09-02").getDay();
-    mockWorkerAvailability([{ day: wd, startTime: "18:00", endTime: "22:00" }]);
-
-    const result = await getJobByIdPublic("job1", WORKER_ID);
-
-    assert.equal(result.availabilityMatch.status, "CONFLICT");
-    assert.equal(result.availabilityMatch.coveragePercent, 0);
-  });
-
-  it("leaves availabilityMatch null when the worker has no configured schedule", async () => {
-    setup();
-    mock.method(WorkerProfile, "findOne", () => ({ select: () => ({ lean: async () => ({ user: WORKER_ID, weeklyAvailability: [] }) }) }));
-
-    const result = await getJobByIdPublic("job1", WORKER_ID);
-
-    assert.equal(result.availabilityMatch, null);
-  });
-
-  it("leaves availabilityMatch null when no workerId is provided", async () => {
-    setup();
-    mockWorkerAvailability([{ day: 1, startTime: "09:00", endTime: "18:00" }]);
-
-    const result = await getJobByIdPublic("job1", null);
-
-    assert.equal(result.availabilityMatch, null);
-  });
-});
-
-describe("getPublicJobs worker availability match", () => {
-  beforeEach(() => {
-    mock.restoreAll();
-  });
-
-  afterEach(() => {
-    mock.restoreAll();
-  });
-
-  it("attaches availabilityMatch to each job for the worker", async () => {
-    const wd = new Date("2026-09-02").getDay();
-    const job1 = {
-      _id: "job1",
-      status: "OPEN",
-      hiringDeadline: null,
-      employer: "emp1",
-      workersRequired: 2,
-      schedule: JOB_SCHEDULE,
-    };
-    const job2 = {
-      _id: "job2",
-      status: "OPEN",
-      hiringDeadline: null,
-      employer: "emp2",
-      workersRequired: 2,
-      schedule: JOB_SCHEDULE,
-    };
-
-    mock.method(Job, "find", () => chain([job1, job2]));
-    mock.method(Job, "countDocuments", async () => 2);
-    mock.method(Application, "find", () => chain([]));
-    mock.method(Assignment, "find", () => chain([]));
-    mock.method(Assignment, "aggregate", async () => []);
-    mock.method(
+    const workerProfileSpy = mock.method(
       WorkerProfile,
       "findOne",
-      () => ({ select: () => ({ lean: async () => ({ user: WORKER_ID, weeklyAvailability: [{ day: wd, startTime: "09:00", endTime: "18:00" }] }) }) })
+      () => ({ select: () => ({ lean: async () => ({ user: WORKER_ID, weeklyAvailability: [{ day: 3, startTime: "09:00", endTime: "18:00" }] }) }) })
     );
+
+    const result = await getJobByIdPublic("job1", WORKER_ID);
+
+    // The schedule-match concept was removed from the product: no availabilityMatch
+    // field, and the worker's weekly schedule is never consulted.
+    assert.equal(result.availabilityMatch, undefined);
+    assert.equal(workerProfileSpy.mock.callCount(), 0);
+  });
+
+  it("getJobByIdPublic returns the job without availabilityMatch for signed-in and anonymous workers", async () => {
+    mock.method(Job, "findById", () => ({ lean: async () => ({ ...job }) }));
+    mock.method(
+      EmployerProfile,
+      "findOne",
+      () => ({ select: () => ({ lean: async () => ({ companyName: "Acme", logo: "x.png" }) }) })
+    );
+    mock.method(Application, "findOne", () => ({ lean: async () => null }));
+    mock.method(Assignment, "findOne", () => ({ lean: async () => null }));
+
+    const asWorker = await getJobByIdPublic("job1", WORKER_ID);
+    const asAnonymous = await getJobByIdPublic("job1", null);
+
+    // Schedule matching is removed: neither view carries availabilityMatch, and a
+    // worker with a legacy schedule sees the same match-free payload as a visitor.
+    assert.equal(asWorker.availabilityMatch, undefined);
+    assert.equal(asAnonymous.availabilityMatch, undefined);
+  });
+
+  it("getPublicJobs never attaches availabilityMatch to feed jobs", async () => {
+    mockLegacyAvailabilitySchedule();
+    basePublicJobsSetup();
 
     const result = await getPublicJobs({ page: 1, limit: 20 }, WORKER_ID);
 
-    assert.equal(result.jobs.length, 2);
-    assert.equal(result.jobs[0].availabilityMatch.status, "MATCH");
-    assert.equal(result.jobs[0].availabilityMatch.coveragePercent, 100);
-    assert.equal(result.jobs[1].availabilityMatch.status, "MATCH");
-  });
-});
-
-describe("getPublicJobs availability-fit (availableOnly / best_match)", () => {
-  beforeEach(() => {
-    mock.restoreAll();
+    assert.equal(result.jobs.length, 1);
+    assert.equal(result.jobs[0].availabilityMatch, undefined);
   });
 
-  afterEach(() => {
-    mock.restoreAll();
+  it("availableOnly never hides jobs (no schedule-linked filtering)", async () => {
+    mockLegacyAvailabilitySchedule();
+    basePublicJobsSetup();
+
+    const result = await getPublicJobs(
+      { page: 1, limit: 20, availableOnly: "true" },
+      WORKER_ID
+    );
+
+    // availableOnly is inert: every eligible job is returned, none hidden.
+    assert.equal(result.pagination.total, 1);
+    assert.deepEqual(result.jobs.map((j) => j._id), ["job1"]);
   });
 
-  // Worker is available Wednesday (day 3) 09:00-13:00.
-  const WED = new Date("2026-09-02").getDay(); // 3
-  const THU = new Date("2026-09-03").getDay(); // 4
-  const AVAILABILITY = [{ day: WED, startTime: "09:00", endTime: "13:00" }];
-
-  function makeJob(_id, weekday, startTime, endTime) {
-    const d = new Date("2026-09-02T00:00:00");
-    d.setDate(d.getDate() + (weekday - WED));
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    const dateStr = `${yyyy}-${mm}-${dd}`;
-    return {
-      _id,
-      status: "OPEN",
-      hiringDeadline: null,
-      employer: "emp1",
-      workersRequired: 2,
-      schedule: { startDate: dateStr, endDate: dateStr, startTime, endTime },
-    };
-  }
-
-  function setupFindCandidates(candidates, availability = AVAILABILITY) {
-    mock.method(Job, "find", () => chain(candidates));
+  it("best_match falls back to the default (newest) sort", async () => {
+    const jobOlder = { ...job, _id: "jobOlder" };
+    const jobNewer = { ...job, _id: "jobNewer" };
+    mockLegacyAvailabilitySchedule();
+    // chain() returns docs in input order; the default sort is newest-first.
+    mock.method(Job, "find", () => chain([jobOlder, jobNewer]));
+    mock.method(Job, "countDocuments", async () => 2);
     mock.method(Application, "find", () => chain([]));
     mock.method(Assignment, "find", () => chain([]));
     mock.method(Assignment, "aggregate", async () => []);
-    mock.method(
-      WorkerProfile,
-      "findOne",
-      () => ({ select: () => ({ lean: async () => ({ user: WORKER_ID, weeklyAvailability: availability }) }) })
-    );
-  }
-
-  it("best_match orders MATCH first, PARTIAL next, CONFLICT last, without omitting jobs", async () => {
-    const jobMatch = makeJob("jobMatch", WED, "10:00", "12:00");
-    const jobPartial = makeJob("jobPartial", WED, "11:00", "14:00");
-    const jobConflict = makeJob("jobConflict", THU, "10:00", "14:00");
-    // Deliberately out of order to prove ordering (not input order).
-    setupFindCandidates([jobPartial, jobMatch, jobConflict]);
 
     const result = await getPublicJobs(
       { page: 1, limit: 20, sort: "best_match" },
       WORKER_ID
     );
 
-    assert.equal(result.pagination.total, 3, "no job is omitted under best_match");
-    assert.deepEqual(
-      result.jobs.map((j) => j._id),
-      ["jobMatch", "jobPartial", "jobConflict"]
-    );
-    assert.equal(result.jobs[0].availabilityMatch.status, "MATCH");
-    assert.equal(result.jobs[1].availabilityMatch.status, "PARTIAL");
-    assert.equal(result.jobs[2].availabilityMatch.status, "CONFLICT");
-  });
-
-  it("availableOnly keeps only MATCH/PARTIAL jobs and drops CONFLICT", async () => {
-    const jobMatch = makeJob("jobMatch", WED, "10:00", "14:00");
-    const jobPartial = makeJob("jobPartial", WED, "10:00", "12:00");
-    const jobConflict = makeJob("jobConflict", THU, "10:00", "14:00");
-    setupFindCandidates([jobMatch, jobPartial, jobConflict]);
-
-    const result = await getPublicJobs(
-      { page: 1, limit: 20, availableOnly: "true" },
-      WORKER_ID
-    );
-
-    assert.equal(result.pagination.total, 2, "CONFLICT job is filtered out");
-    assert.deepEqual(
-      result.jobs.map((j) => j._id),
-      ["jobMatch", "jobPartial"]
-    );
-  });
-
-  it("availableOnly with no configured schedule yields an empty feed", async () => {
-    const jobMatch = makeJob("jobMatch", WED, "10:00", "14:00");
-    setupFindCandidates([jobMatch], []);
-
-    const result = await getPublicJobs(
-      { page: 1, limit: 20, availableOnly: "true" },
-      WORKER_ID
-    );
-
-    assert.equal(result.pagination.total, 0);
-    assert.deepEqual(result.jobs, []);
-  });
-
-  it("availableOnly is inert when no worker is signed in", async () => {
-    const jobMatch = makeJob("jobMatch", WED, "10:00", "14:00");
-    const jobConflict = makeJob("jobConflict", THU, "10:00", "14:00");
-    mock.method(Job, "find", () => chain([jobMatch, jobConflict]));
-    mock.method(Job, "countDocuments", async () => 2);
-    mock.method(Assignment, "aggregate", async () => []);
-
-    const result = await getPublicJobs({
-      page: 1,
-      limit: 20,
-      availableOnly: "true",
-    });
-
-    // No worker -> base public path; total is the raw count, nothing filtered.
+    // best_match no longer re-ranks by schedule; it behaves like the base path.
     assert.equal(result.pagination.total, 2);
-    assert.equal(result.jobs.length, 2);
-  });
-
-  it("best_match is inert (falls back to newest) when no worker is signed in", async () => {
-    const jobNew = makeJob("jobNew", WED, "10:00", "14:00");
-    // Unknown availability (null) keeps all jobs under best_match without hiding.
-    setupFindCandidates([jobNew], null);
-    mock.method(Job, "countDocuments", async () => 1);
-
-    const result = await getPublicJobs(
-      { page: 1, limit: 20, sort: "best_match" },
-      WORKER_ID
-    );
-
-    // With best_match, an unknown availability still returns the job (ranked last).
-    assert.equal(result.pagination.total, 1);
-    assert.equal(result.jobs[0]._id, "jobNew");
+    assert.equal(result.jobs[0].availabilityMatch, undefined);
   });
 });
 

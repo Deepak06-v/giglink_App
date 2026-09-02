@@ -83,10 +83,6 @@ export function workerEditProfileRoute(): Href {
   return '/(worker)/profile/edit';
 }
 
-export function workerAvailabilityRoute(): Href {
-  return '/(worker)/profile/availability';
-}
-
 export function workerApplicationsTabRoute(): Href {
   return '/(worker)/(tabs)/applications';
 }

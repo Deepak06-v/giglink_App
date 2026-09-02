@@ -40,14 +40,6 @@ export type JobSortOption =
   | 'date_late'
   | 'best_match';
 
-export type WeekdayIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6;
-
-export interface WeeklyAvailabilityWindow {
-  day: WeekdayIndex; // 0=Sunday ... 6=Saturday (JS getDay ordering)
-  startTime: string; // 24-hour HH:MM, local time
-  endTime: string; // 24-hour HH:MM, local time
-}
-
 export interface JobLocation {
   address: string;
   city: string;
@@ -102,15 +94,6 @@ export interface JobApplicationState {
   isAssigned: boolean;
 }
 
-export type AvailabilityMatchStatus = 'MATCH' | 'PARTIAL' | 'CONFLICT' | 'UNKNOWN';
-
-export interface AvailabilityMatch {
-  status: AvailabilityMatchStatus;
-  matchedDays: number[];
-  conflictingDays: number[];
-  coveragePercent: number;
-}
-
 export interface Job {
   _id: string;
   title: string;
@@ -131,7 +114,6 @@ export interface Job {
   isAssigned?: boolean;
   hasCapacity?: boolean;
   applicationState?: JobApplicationState;
-  availabilityMatch?: AvailabilityMatch | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -154,7 +136,6 @@ export interface Application {
   appliedAt: string;
   reviewedAt?: string;
   reviewedBy?: string;
-  availabilityMatch?: AvailabilityMatch | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -205,8 +186,7 @@ export interface WorkerProfile {
   skills?: string[];
   experience?: string;
   languages?: string[];
-  availability?: 'AVAILABLE' | 'LIMITED' | 'UNAVAILABLE';
-  weeklyAvailability?: WeeklyAvailabilityWindow[];
+  availability?: 'AVAILABLE' | 'UNAVAILABLE';
   completion?: ProfileCompletion;
 }
 
@@ -253,8 +233,7 @@ export interface WorkerMarketplaceProfile {
   skills?: string[];
   experience?: string;
   languages?: string[];
-  availability?: 'AVAILABLE' | 'LIMITED' | 'UNAVAILABLE';
-  weeklyAvailability?: WeeklyAvailabilityWindow[];
+  availability?: 'AVAILABLE' | 'UNAVAILABLE';
   location?: {
     city?: string;
     state?: string;
