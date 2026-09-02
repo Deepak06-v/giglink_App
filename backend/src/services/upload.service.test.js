@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 
 import {
   buildUploadAuthorization,
@@ -7,6 +8,27 @@ import {
   ALLOWED_FORMATS,
   MAX_UPLOAD_BYTES,
 } from "./upload.service.js";
+
+/**
+ * Reproduce Cloudinary's server-side signed-upload validation exactly as it is
+ * performed for POST /v1_1/{cloud}/image/upload. Cloudinary derives
+ * resource_type from the URL path and EXCLUDES it from the string it signs.
+ */
+const cloudinaryValidationSignature = ({ publicId, timestamp, transformation }) => {
+  const params = {
+    timestamp: String(timestamp),
+    public_id: publicId,
+    overwrite: "true",
+  };
+  if (transformation) {
+    params.transformation = transformation;
+  }
+  const toSign = Object.keys(params)
+    .sort()
+    .map((k) => `${k}=${params[k].replace(/&/g, "%26")}`)
+    .join("&");
+  return createHash("sha1").update(toSign + process.env.CLOUDINARY_API_SECRET).digest("hex");
+};
 
 const ORIGINAL_ENV = { ...process.env };
 
@@ -157,5 +179,42 @@ describe("getUploadSignature", () => {
         }),
       (err) => err.statusCode === 503,
     );
+  });
+
+  it("signs over exactly the parameters Cloudinary validates (no resource_type)", () => {
+    // Regression test: Cloudinary's signed-upload validation derives
+    // resource_type from the URL path and EXCLUDES it from the string it
+    // signs. If resource_type were included in paramsToSign the generated
+    // signature would never match Cloudinary's expected signature and every
+    // upload would be rejected with HTTP 401 "Invalid Signature".
+    const payload = getUploadSignature({
+      type: "worker_profile",
+      userId: "w1",
+      role: "worker",
+    });
+
+    const expected = cloudinaryValidationSignature({
+      publicId: payload.publicId,
+      timestamp: payload.timestamp,
+      transformation: payload.transformation,
+    });
+
+    assert.equal(payload.signature, expected);
+  });
+
+  it("employer logo signature also matches Cloudinary validation (no resource_type)", () => {
+    const payload = getUploadSignature({
+      type: "employer_logo",
+      userId: "e1",
+      role: "employer",
+    });
+
+    const expected = cloudinaryValidationSignature({
+      publicId: payload.publicId,
+      timestamp: payload.timestamp,
+      transformation: payload.transformation,
+    });
+
+    assert.equal(payload.signature, expected);
   });
 });

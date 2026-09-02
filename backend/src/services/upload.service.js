@@ -103,11 +103,18 @@ const getUploadSignature = ({ type, userId, role }) => {
 
   const timestamp = Math.round(Date.now() / 1000);
 
+  // NOTE: `resource_type` is intentionally NOT included in the signed
+  // parameters. Cloudinary's `/image/upload` signed-upload validation derives
+  // the resource_type from the URL path and EXCLUDES it from the string that
+  // is signed — it does not recompute the signature over `resource_type`.
+  // Including it here would produce a signature that never matches what
+  // Cloudinary validates, causing every upload to be rejected with
+  // HTTP 401 "Invalid Signature". The signature must be computed over exactly
+  // the parameters Cloudinary uses.
   const paramsToSign = {
     timestamp,
     public_id: publicId,
     overwrite: "true",
-    resource_type: "image",
   };
   if (transformation) {
     paramsToSign.transformation = transformation;
