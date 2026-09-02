@@ -94,6 +94,19 @@ function SectionHeader({ label }: { label: string }) {
   );
 }
 
+function InfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.infoRow}>
+      <Text variant="caption" color="muted">
+        {label}
+      </Text>
+      <Text variant="bodyMd" color="primary">
+        {value || '—'}
+      </Text>
+    </View>
+  );
+}
+
 export default function WorkerProfileScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
@@ -276,6 +289,34 @@ export default function WorkerProfileScreen() {
         </Card>
       ) : null}
 
+      <SectionHeader label={translate('profile.profileInformation')} />
+      <Card style={styles.groupCard}>
+        <InfoRow label={translate('profile.email')} value={user?.email ?? ''} />
+        <InfoRow label={translate('profile.phone')} value={profile?.phone ?? ''} />
+        <InfoRow
+          label={translate('profile.location')}
+          value={
+            profile?.location
+              ? [profile.location.city, profile.location.state, profile.location.pincode]
+                  .filter(Boolean)
+                  .join(', ')
+              : ''
+          }
+        />
+        <InfoRow label={translate('profile.experience')} value={profile?.experience ?? ''} />
+      </Card>
+
+      {profile?.bio ? (
+        <>
+          <SectionHeader label={translate('profile.about')} />
+          <Card style={styles.groupCard}>
+            <Text variant="bodyMd" color="secondary">
+              {profile.bio}
+            </Text>
+          </Card>
+        </>
+      ) : null}
+
       <SectionHeader label={translate('profile.sections.profile')} />
       <Card style={styles.groupCard}>
         <StatRow
@@ -434,6 +475,9 @@ const styles = StyleSheet.create({
   groupCard: {
     marginBottom: spacing.sm,
     paddingVertical: spacing.sm,
+  },
+  infoRow: {
+    gap: spacing.xs,
   },
   divider: {
     height: StyleSheet.hairlineWidth,

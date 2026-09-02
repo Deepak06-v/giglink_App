@@ -1,7 +1,7 @@
 import WorkerProfile from "../models/WorkerProfile.js";
 
 const getWorkerProfile = async (userId) => {
-  const profile = await WorkerProfile.findOne({ user: userId });
+  const profile = await WorkerProfile.findOne({ user: userId }).lean();
   if (!profile) {
     return {
       user: userId,
@@ -30,7 +30,7 @@ const createOrUpdateWorkerProfile = async (userId, updateData) => {
     { user: userId },
     { $set: updateData },
     { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
-  );
+  ).lean();
 
   return profile;
 };

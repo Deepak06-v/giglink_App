@@ -289,6 +289,7 @@ export const en = {
     profileInformation: 'Profile Information',
     email: 'Email',
     phone: 'Phone',
+    location: 'Location',
     city: 'City',
     state: 'State',
     pincode: 'Pincode',

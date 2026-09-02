@@ -289,6 +289,7 @@ export const kn = {
     profileInformation: 'ಪ್ರೊಫೈಲ್ ಮಾಹಿತಿ',
     email: 'ಇಮೇಲ್',
     phone: 'ಫೋನ್',
+    location: 'ಸ್ಥಳ',
     city: 'ನಗರ',
     state: 'ರಾಜ್ಯ',
     pincode: 'ಪಿನ್ ಕೋಡ್',
