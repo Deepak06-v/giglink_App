@@ -16,53 +16,48 @@
       "supportsTablet": false
     },
     "android": {
-  "adaptiveIcon": {
-    "backgroundColor": "#0B0B0F",
-    "foregroundImage": "./assets/images/android-icon-foreground.png",
-    "backgroundImage": "./assets/images/android-icon-background.png",
-    "monochromeImage": "./assets/images/android-icon-monochrome.png"
-  },
-  "package": "com.deepak_06v.giglink",
-  "config": {
-    "googleMaps": {
-      "apiKey": "AIzaSyA8YEbQ9sjBWfyhjOJ5c__e3SLKfoByIIw"
-    }
-  }
-},
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0B0F",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "package": "com.deepak_06v.giglink",
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyA8YEbQ9sjBWfyhjOJ5c__e3SLKfoByIIw"
+        }
+      }
+    },
     "web": {
       "bundler": "metro",
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-  "expo-router",
-  [
-    "expo-splash-screen",
-    {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
-    }
-  ],
-  "expo-secure-store",
-  "expo-font",
-  "expo-web-browser",
-  "@react-native-google-signin/google-signin",
-  "@react-native-community/datetimepicker",
-  [
-    "expo-notifications",
-    {
-      "defaultChannel": "giglink-notifications"
-    }
-  ],
-  "expo-location",
-  [
-    "expo-image-picker",
-    {
-      "photosPermission": "GigLink needs access to your photos so you can set your profile photo or company logo."
-    }
-  ]
-],
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
+        }
+      ],
+      "expo-secure-store",
+      "expo-font",
+      "expo-web-browser",
+      "@react-native-google-signin/google-signin",
+      "@react-native-community/datetimepicker",
+      "expo-location",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "GigLink needs access to your photos so you can set your profile photo or company logo."
+        }
+      ],
+      "pushy-expo-plugin"
+    ],
     "experiments": {
       "typedRoutes": true
     },

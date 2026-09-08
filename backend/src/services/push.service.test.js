@@ -4,7 +4,12 @@ import assert from "node:assert/strict";
 import DeviceToken from "../models/DeviceToken.js";
 import Notification from "../models/Notification.js";
 import { createNotification } from "./notification.service.js";
-import { buildPushMessages, collectInvalidTokens, pushNotifications } from "./push.service.js";
+import {
+  buildPushyPayload,
+  collectInvalidTokens,
+  pushNotifications,
+  sendPushyNotification,
+} from "./push.service.js";
 
 const sampleNotification = {
   _id: "507f1f77bcf86cd799439011",
@@ -17,68 +22,191 @@ const sampleNotification = {
   relatedAssignment: "507f1f77bcf86cd799439015",
 };
 
-const sampleTokens = ["ExponentPushToken[aaaa]", "ExponentPushToken[bbbb]"];
+const sampleTokens = ["pushy-token-aaaa", "pushy-token-bbbb"];
 
-describe("push.service", () => {
+// Mock the DeviceToken model so getActiveDevices returns the given devices
+// (it requires the .select("token provider").lean() chain).
+const mockDevices = (devices) => {
+  mock.method(DeviceToken, "find", () => ({
+    select: () => ({ lean: async () => devices }),
+  }));
+};
+
+const mockDeletedTokens = () => {
+  const calls = [];
+  mock.method(DeviceToken, "deleteMany", async (filter) => {
+    calls.push([...(filter.token?.$in ?? [])]);
+    return { deletedCount: calls[0].length };
+  });
+  return calls;
+};
+
+describe("push.service (Pushy)", () => {
   beforeEach(() => {
     mock.restoreAll();
+    process.env.PUSHY_API_KEY = "test-pushy-key";
   });
 
   afterEach(() => {
     mock.restoreAll();
+    delete process.env.PUSHY_API_KEY;
   });
 
-  it("builds push messages with ONLY navigation-safe payload keys", () => {
-    const messages = buildPushMessages(sampleNotification, sampleTokens);
+  it("builds a Pushy payload with navigation ids plus title/message inside data", () => {
+    const payload = buildPushyPayload(sampleNotification, sampleTokens);
 
-    assert.equal(messages.length, 2);
-    for (const message of messages) {
-      assert.equal(message.title, sampleNotification.title);
-      assert.equal(message.body, sampleNotification.message);
-      assert.equal(message.sound, "default");
-      assert.equal(message.channelId, "giglink-notifications");
-      assert.deepEqual(Object.keys(message.data).sort(), [
-        "notificationId",
-        "relatedApplication",
-        "relatedAssignment",
-        "relatedJob",
-        "type",
-      ]);
-      assert.equal(message.data.notificationId, sampleNotification._id);
-      assert.equal(message.data.type, "APPLICATION_ACCEPTED");
-      assert.equal(message.data.relatedJob, sampleNotification.relatedJob);
-      assert.equal(message.data.relatedApplication, sampleNotification.relatedApplication);
-      assert.equal(message.data.relatedAssignment, sampleNotification.relatedAssignment);
-    }
-    assert.equal(messages[0].to, "ExponentPushToken[aaaa]");
-    assert.equal(messages[1].to, "ExponentPushToken[bbbb]");
+    assert.deepEqual(payload.to, sampleTokens);
+    assert.deepEqual(Object.keys(payload.data).sort(), [
+      "message",
+      "notificationId",
+      "relatedApplication",
+      "relatedAssignment",
+      "relatedJob",
+      "title",
+      "type",
+    ]);
+    assert.equal(payload.data.notificationId, sampleNotification._id);
+    assert.equal(payload.data.type, "APPLICATION_ACCEPTED");
+    assert.equal(payload.data.relatedJob, sampleNotification.relatedJob);
+    assert.equal(payload.data.relatedApplication, sampleNotification.relatedApplication);
+    assert.equal(payload.data.relatedAssignment, sampleNotification.relatedAssignment);
+    assert.equal(payload.data.title, sampleNotification.title);
+    assert.equal(payload.data.message, sampleNotification.message);
   });
 
-  it("collects DeviceNotRegistered tokens from ticket errors", () => {
-    const entries = [
-      { token: "ExponentPushToken[a]", ticket: { status: "error", details: { error: "DeviceNotRegistered" } } },
-      { token: "ExponentPushToken[b]", ticket: { status: "error", details: { error: "MessageTooBig" } } },
-      { token: "ExponentPushToken[c]", ticket: { status: "ok", id: "r1" } },
-    ];
-    const receipts = {
-      r1: { status: "error", details: { error: "DeviceNotRegistered" } },
-    };
+  it("uses empty strings for missing related ids (data values stay short strings)", () => {
+    const payload = buildPushyPayload(
+      { _id: sampleNotification._id, type: "JOB_FILLED", title: "t", message: "m" },
+      ["tok"],
+    );
 
-    const invalid = collectInvalidTokens(entries, receipts);
-
-    assert.deepEqual(invalid.sort(), ["ExponentPushToken[a]", "ExponentPushToken[c]"]);
+    assert.equal(payload.data.relatedJob, "");
+    assert.equal(payload.data.relatedApplication, "");
+    assert.equal(payload.data.relatedAssignment, "");
   });
 
-  it("does not collect tokens for transient or ok receipts", () => {
-    const entries = [
-      { token: "ExponentPushToken[a]", ticket: { status: "error", details: { error: "InternalServerError" } } },
-      { token: "ExponentPushToken[b]", ticket: { status: "ok", id: "r2" } },
-    ];
-    const receipts = { r2: { status: "ok" } };
+  it("collects invalid tokens from info.failed", () => {
+    const invalid = collectInvalidTokens(
+      { success: true, info: { devices: 1, failed: [sampleTokens[1]] } },
+      sampleTokens,
+    );
 
-    const invalid = collectInvalidTokens(entries, receipts);
+    assert.deepEqual(invalid, [sampleTokens[1]]);
+  });
+
+  it("collects invalid tokens from the legacy invalid_devices shape", () => {
+    const invalid = collectInvalidTokens(
+      { success: true, info: { invalid_devices: [sampleTokens[0]] } },
+      sampleTokens,
+    );
+
+    assert.deepEqual(invalid, [sampleTokens[0]]);
+  });
+
+  it("returns no invalid tokens when the response reports none", () => {
+    assert.deepEqual(collectInvalidTokens({ success: true, info: { devices: 2 } }, sampleTokens), []);
+    assert.deepEqual(collectInvalidTokens({}, sampleTokens), []);
+  });
+
+  it("ignores invalid-listed tokens that were not part of the send", () => {
+    const invalid = collectInvalidTokens(
+      { success: true, info: { failed: ["unknown-token"] } },
+      sampleTokens,
+    );
 
     assert.deepEqual(invalid, []);
+  });
+
+  it("delivers to all active devices in a single payload and avoids deletions on success", async () => {
+    mockDevices(sampleTokens.map((token) => ({ token, provider: "pushy" })));
+    const deleted = mockDeletedTokens();
+    let sentApiKey = null;
+    let sentPayload = null;
+    const fakeHttp = async (apiKey, payload) => {
+      sentApiKey = apiKey;
+      sentPayload = payload;
+      return { success: true, info: { devices: 2 } };
+    };
+
+    const delivered = await pushNotifications(sampleNotification, { httpPost: fakeHttp });
+
+    assert.equal(delivered, 2);
+    assert.equal(sentApiKey, "test-pushy-key");
+    assert.deepEqual(sentPayload.to, sampleTokens);
+    assert.equal(deleted.length, 0);
+  });
+
+  it("removes invalid tokens reported by info.failed", async () => {
+    mockDevices([
+      { token: sampleTokens[0], provider: "pushy" },
+      { token: sampleTokens[1], provider: "pushy" },
+    ]);
+    const deleted = mockDeletedTokens();
+    const fakeHttp = async (_apiKey, _payload) => ({
+      success: true,
+      info: { devices: 1, failed: [sampleTokens[1]] },
+    });
+
+    await pushNotifications(sampleNotification, { httpPost: fakeHttp });
+
+    assert.equal(deleted.length, 1);
+    assert.deepEqual(deleted[0], [sampleTokens[1]]);
+  });
+
+  it("skips delivery (and never rejects) when PUSHY_API_KEY is missing", async () => {
+    mockDevices(sampleTokens.map((token) => ({ token, provider: "pushy" })));
+    delete process.env.PUSHY_API_KEY;
+    let httpCalled = false;
+    const fakeHttp = async () => {
+      httpCalled = true;
+      return { success: true };
+    };
+
+    const delivered = await pushNotifications(sampleNotification, { httpPost: fakeHttp });
+
+    assert.equal(delivered, 0);
+    assert.equal(httpCalled, false);
+  });
+
+  it("swallows provider-side transport errors without removing tokens", async () => {
+    mockDevices(sampleTokens.map((token) => ({ token, provider: "pushy" })));
+    const deleted = mockDeletedTokens();
+    const fakeHttp = async () => {
+      throw new Error("getaddrinfo ENOTFOUND api.pushy.me");
+    };
+
+    const delivered = await pushNotifications(sampleNotification, { httpPost: fakeHttp });
+
+    assert.equal(delivered, 0);
+    assert.equal(deleted.length, 0);
+  });
+
+  it("swallows 400/429/500 provider responses without removing tokens", async () => {
+    mockDevices([{ token: sampleTokens[0], provider: "pushy" }]);
+    const deleted = mockDeletedTokens();
+    const fakeHttp = async () => {
+      const error = new Error("RATE_LIMIT_EXCEEDED");
+      error.statusCode = 429;
+      error.code = "RATE_LIMIT_EXCEEDED";
+      throw error;
+    };
+
+    const delivered = await pushNotifications(sampleNotification, { httpPost: fakeHttp });
+
+    assert.equal(delivered, 0);
+    assert.equal(deleted.length, 0);
+  });
+
+  it("does nothing when the device list is empty", async () => {
+    mockDevices([]);
+    // deleteMany would reject if called — an empty list must never reach it.
+    mock.method(DeviceToken, "deleteMany", async () => {
+      throw new Error("should not be called");
+    });
+
+    const delivered = await sendPushyNotification(sampleNotification, []);
+
+    assert.equal(delivered, 0);
   });
 
   it("pushNotifications never throws even when the token lookup fails", async () => {

@@ -16,7 +16,7 @@ export const registerDeviceController = async (req, res) => {
   try {
     const userId = req.user.userId;
     const { token, platform } = req.body;
-    const provider = req.body.provider || "expo";
+    const provider = req.body.provider || "pushy";
     const device = await registerDeviceToken(userId, token, platform, provider);
     return res.status(201).json({
       success: true,

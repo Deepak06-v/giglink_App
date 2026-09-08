@@ -9,6 +9,13 @@ import {
   unregisterDeviceToken,
 } from "./device.service.js";
 
+const pushyTokens = {
+  phoneA: "pushy-token-phoneA",
+  phoneB: "pushy-token-phoneB",
+  tabletB: "pushy-token-tabletB",
+  iphoneC: "pushy-token-iPhoneC",
+};
+
 describe("device.service", () => {
   beforeEach(() => {
     mock.restoreAll();
@@ -18,40 +25,40 @@ describe("device.service", () => {
     mock.restoreAll();
   });
 
-  it("registers a device token for a user with platform and lastActiveAt", async () => {
+  it("registers a device token for a user with platform and lastActiveAt (default provider pushy)", async () => {
     const calls = [];
     mock.method(DeviceToken, "findOneAndUpdate", async (filter, update, options) => {
       calls.push({ filter, update, options });
       return { _id: "d1", ...filter, platform: update.$set.platform, provider: update.$set.provider, lastActiveAt: update.$set.lastActiveAt };
     });
 
-    const device = await registerDeviceToken("user1", "ExponentPushToken[a]", "android");
+    const device = await registerDeviceToken("user1", pushyTokens.phoneA, "android");
 
     assert.equal(calls.length, 1);
-    assert.deepEqual(calls[0].filter, { userId: "user1", token: "ExponentPushToken[a]" });
+    assert.deepEqual(calls[0].filter, { userId: "user1", token: pushyTokens.phoneA });
     assert.equal(calls[0].update.$set.platform, "android");
-    // Expo registrations keep the legacy default provider and stay Expo-compatible.
-    assert.equal(calls[0].update.$set.provider, "expo");
+    // Pushy is the only provider, so the default never changes.
+    assert.equal(calls[0].update.$set.provider, "pushy");
     assert.ok(calls[0].update.$set.lastActiveAt instanceof Date);
     assert.equal(calls[0].options.upsert, true);
     assert.equal(device.platform, "android");
-    assert.equal(device.provider, "expo");
+    assert.equal(device.provider, "pushy");
   });
 
-  it("registers an FCM token with provider = fcm", async () => {
+  it("registers an explicit Pushy token with provider = pushy", async () => {
     const calls = [];
     mock.method(DeviceToken, "findOneAndUpdate", async (filter, update) => {
       calls.push({ filter, update });
       return { _id: "d1", ...filter, platform: update.$set.platform, provider: update.$set.provider };
     });
 
-    const device = await registerDeviceToken("user1", "FCM-TOKEN-123", "android", "fcm");
+    const device = await registerDeviceToken("user1", "PUSHY-TOKEN-123", "android", "pushy");
 
     assert.equal(calls.length, 1);
-    assert.deepEqual(calls[0].filter, { userId: "user1", token: "FCM-TOKEN-123" });
+    assert.deepEqual(calls[0].filter, { userId: "user1", token: "PUSHY-TOKEN-123" });
     assert.equal(calls[0].update.$set.platform, "android");
-    assert.equal(calls[0].update.$set.provider, "fcm");
-    assert.equal(device.provider, "fcm");
+    assert.equal(calls[0].update.$set.provider, "pushy");
+    assert.equal(device.provider, "pushy");
   });
 
   it("rejects an unsupported push provider", async () => {
@@ -61,44 +68,17 @@ describe("device.service", () => {
     );
   });
 
-  it("re-registering the same FCM token upserts (no duplicate)", async () => {
+  it("re-registering the same Pushy token upserts (no duplicate)", async () => {
     let callCount = 0;
     mock.method(DeviceToken, "findOneAndUpdate", async (_filter, update) => {
       callCount += 1;
       return { _id: "d1", token: _filter.token, provider: update.$set.provider };
     });
 
-    await registerDeviceToken("user1", "FCM-TOKEN-123", "android", "fcm");
-    await registerDeviceToken("user1", "FCM-TOKEN-123", "android", "fcm");
+    await registerDeviceToken("user1", pushyTokens.phoneA, "android", "pushy");
+    await registerDeviceToken("user1", pushyTokens.phoneA, "android", "pushy");
 
     assert.equal(callCount, 2, "each call goes through the single upsert path — no duplicate rows");
-  });
-
-  it("re-registering the same token updates provider on upsert", async () => {
-    const calls = [];
-    mock.method(DeviceToken, "findOneAndUpdate", async (filter, update) => {
-      calls.push(update.$set.provider);
-      return { _id: "d1", provider: update.$set.provider };
-    });
-
-    await registerDeviceToken("user1", "SOME-TOKEN", "android", "expo");
-    await registerDeviceToken("user1", "SOME-TOKEN", "android", "fcm");
-
-    assert.deepEqual(calls, ["expo", "fcm"]);
-  });
-
-  it("re-registering the same token upserts (no duplicate)", async () => {
-    let callCount = 0;
-    mock.method(DeviceToken, "findOneAndUpdate", async () => {
-      callCount += 1;
-      return { _id: "d1" };
-    });
-
-    await registerDeviceToken("user1", "ExponentPushToken[a]", "android");
-    await registerDeviceToken("user1", "ExponentPushToken[a]", "android");
-
-    assert.equal(callCount, 2);
-    assert.equal(callCount, 2, "same token+user must always go through one upsert path");
   });
 
   it("supports multiple devices per user", async () => {
@@ -106,33 +86,30 @@ describe("device.service", () => {
     mock.method(DeviceToken, "findOneAndUpdate", async (_filter, update) => {
       const token = _filter.token;
       registered.push(token);
-      return { token };
+      return { token, provider: update.$set.provider };
     });
 
-    await registerDeviceToken("user1", "ExponentPushToken[phoneA]", "android");
-    await registerDeviceToken("user1", "ExponentPushToken[tabletB]", "android");
-    await registerDeviceToken("user1", "ExponentPushToken[iPhoneC]", "ios");
+    await registerDeviceToken("user1", pushyTokens.phoneA, "android");
+    await registerDeviceToken("user1", pushyTokens.tabletB, "android");
+    await registerDeviceToken("user1", pushyTokens.iphoneC, "ios");
 
     assert.deepEqual(registered, [
-      "ExponentPushToken[phoneA]",
-      "ExponentPushToken[tabletB]",
-      "ExponentPushToken[iPhoneC]",
+      pushyTokens.phoneA,
+      pushyTokens.tabletB,
+      pushyTokens.iphoneC,
     ]);
   });
 
   it("returns all active tokens for a user", async () => {
     mock.method(DeviceToken, "find", () => ({
       select: () => ({
-        lean: async () => [
-          { token: "ExponentPushToken[phoneA]" },
-          { token: "ExponentPushToken[tabletB]" },
-        ],
+        lean: async () => [{ token: pushyTokens.phoneA }, { token: pushyTokens.tabletB }],
       }),
     }));
 
     const tokens = await getActiveDeviceTokens("user1");
 
-    assert.deepEqual(tokens, ["ExponentPushToken[phoneA]", "ExponentPushToken[tabletB]"]);
+    assert.deepEqual(tokens, [pushyTokens.phoneA, pushyTokens.tabletB]);
   });
 
   it("deletes a device token scoped to the owning user", async () => {
@@ -142,12 +119,12 @@ describe("device.service", () => {
       return { deletedCount: 1 };
     });
 
-    const result = await unregisterDeviceToken("user1", "ExponentPushToken[a]");
+    const result = await unregisterDeviceToken("user1", pushyTokens.phoneA);
 
     assert.equal(result.deleted, true);
     assert.equal(calls.length, 1);
     // Ownership is enforced by including userId in the filter.
-    assert.deepEqual(calls[0], { userId: "user1", token: "ExponentPushToken[a]" });
+    assert.deepEqual(calls[0], { userId: "user1", token: pushyTokens.phoneA });
   });
 
   it("removes multiple invalid tokens in one deleteMany", async () => {
@@ -157,10 +134,10 @@ describe("device.service", () => {
       return { deletedCount: 2 };
     });
 
-    const result = await removeDeviceTokens(["ExponentPushToken[a]", "ExponentPushToken[b]"]);
+    const result = await removeDeviceTokens([pushyTokens.phoneA, pushyTokens.tabletB]);
 
     assert.equal(result.deleted, 2);
-    assert.deepEqual(calls[0], { token: { $in: ["ExponentPushToken[a]", "ExponentPushToken[b]"] } });
+    assert.deepEqual(calls[0], { token: { $in: [pushyTokens.phoneA, pushyTokens.tabletB] } });
   });
 
   it("does not call deleteMany for an empty token list", async () => {

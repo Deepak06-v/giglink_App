@@ -21,8 +21,8 @@ const deviceTokenSchema = new mongoose.Schema(
     provider: {
       type: String,
       required: true,
-      enum: ["expo", "fcm"],
-      default: "expo",
+      enum: ["pushy"],
+      default: "pushy",
     },
     lastActiveAt: {
       type: Date,

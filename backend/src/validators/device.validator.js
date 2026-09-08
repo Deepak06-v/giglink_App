@@ -23,8 +23,8 @@ const registerDeviceValidation = [
     .withMessage("Platform must be android, ios, or web"),
   body("provider")
     .optional()
-    .isIn(["expo", "fcm"])
-    .withMessage("Provider must be expo or fcm"),
+    .isIn(["pushy"])
+    .withMessage("Provider must be pushy"),
   validate,
 ];
 

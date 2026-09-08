@@ -40,12 +40,12 @@ export async function markAllNotificationsAsRead(): Promise<{ updatedCount: numb
 }
 
 export type DevicePlatform = 'android' | 'ios' | 'web';
-export type DeviceProvider = 'expo' | 'fcm';
+export type DeviceProvider = 'pushy';
 
 export async function registerDeviceToken(
   token: string,
   platform: DevicePlatform,
-  provider: DeviceProvider = 'expo',
+  provider: DeviceProvider = 'pushy',
 ): Promise<{ token: string; platform: DevicePlatform; provider: DeviceProvider }> {
   const response = await apiClient.post<
     ApiSuccessResponse<{ token: string; platform: DevicePlatform; provider: DeviceProvider }>

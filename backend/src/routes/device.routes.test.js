@@ -51,7 +51,7 @@ describe("device.routes", () => {
     assert.equal(body.success, false);
   });
 
-  it("accepts an FCM token registration for an authenticated user", async () => {
+  it("accepts a Pushy token registration for an authenticated user", async () => {
     let captured = null;
     mock.method(DeviceToken, "findOneAndUpdate", async (filter, update) => {
       captured = { ...filter, provider: update.$set.provider, platform: update.$set.platform };
@@ -64,19 +64,19 @@ describe("device.routes", () => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${authToken()}`,
       },
-      body: JSON.stringify({ token: "FCM-TOKEN-123", provider: "fcm", platform: "android" }),
+      body: JSON.stringify({ token: "PUSHY-TOKEN-123", provider: "pushy", platform: "android" }),
     });
 
     assert.equal(res.status, 201);
     const body = await res.json();
     assert.equal(body.success, true);
     assert.equal(captured.userId, "user1");
-    assert.equal(captured.token, "FCM-TOKEN-123");
-    assert.equal(captured.provider, "fcm");
+    assert.equal(captured.token, "PUSHY-TOKEN-123");
+    assert.equal(captured.provider, "pushy");
     assert.equal(captured.platform, "android");
   });
 
-  it("accepts an Expo token registration without an explicit provider (default expo)", async () => {
+  it("accepts a Pushy token registration without an explicit provider (default pushy)", async () => {
     let captured = null;
     mock.method(DeviceToken, "findOneAndUpdate", async (filter, update) => {
       captured = { ...filter, provider: update.$set.provider, platform: update.$set.platform };
@@ -89,11 +89,11 @@ describe("device.routes", () => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${authToken()}`,
       },
-      body: JSON.stringify({ token: "ExponentPushToken[aaaa]", platform: "android" }),
+      body: JSON.stringify({ token: "pushy-token-aaaa", platform: "android" }),
     });
 
     assert.equal(res.status, 201);
-    assert.equal(captured.provider, "expo");
+    assert.equal(captured.provider, "pushy");
   });
 
   it("rejects an unsupported provider with 400", async () => {

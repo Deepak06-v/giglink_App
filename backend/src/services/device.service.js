@@ -1,8 +1,8 @@
 import DeviceToken from "../models/DeviceToken.js";
 
-const VALID_PROVIDERS = ["expo", "fcm"];
+const VALID_PROVIDERS = ["pushy"];
 
-const registerDeviceToken = async (userId, token, platform, provider = "expo") => {
+const registerDeviceToken = async (userId, token, platform, provider = "pushy") => {
   if (!VALID_PROVIDERS.includes(provider)) {
     const error = new Error(`Unsupported push provider: ${provider}`);
     error.statusCode = 400;
