@@ -12,15 +12,21 @@ import { useAuthStore } from '@/store/authStore';
 import type { UserRole } from '@/types';
 import { resolvePendingIntentRoute } from '@/utils/routing';
 import { resolvePostAuthRoute } from '@/utils/onboarding';
-import { useTranslation, translate } from '@/lib/i18n';
+import { useTranslation } from '@/lib/i18n';
 
 const RESEND_COOLDOWN_SECONDS = 30;
 
 export default function OtpScreen() {
   const { t } = useTranslation();
-  const params = useLocalSearchParams<{ phone?: string; country?: string }>();
+  const params = useLocalSearchParams<{
+    phone?: string;
+    country?: string;
+    mode?: string;
+    name?: string;
+  }>();
   const phone = typeof params.phone === 'string' ? params.phone : '';
   const country = typeof params.country === 'string' ? params.country : 'IN';
+  const mode = params.mode === 'signup' ? 'signup' : 'signin';
 
   const phoneAuthenticate = useAuthStore((state) => state.phoneAuthenticate);
   const isLoading = useAuthStore((state) => state.isLoading);
@@ -28,7 +34,9 @@ export default function OtpScreen() {
   const clearError = useAuthStore((state) => state.clearError);
 
   const [code, setCode] = useState('');
-  const [name, setName] = useState('');
+  const [name, setName] = useState(
+    typeof params.name === 'string' ? params.name : '',
+  );
   const [role, setRole] = useState<UserRole>('worker');
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(RESEND_COOLDOWN_SECONDS);
@@ -43,6 +51,8 @@ export default function OtpScreen() {
 
   const [verifying, setVerifying] = useState(false);
 
+  const isSignUp = mode === 'signup';
+
   const handleVerify = async () => {
     if (verifying) {
       return;
@@ -52,7 +62,7 @@ export default function OtpScreen() {
     setResendMessage(null);
 
     try {
-      const user = await phoneAuthenticate({ phone, country, code, role, name });
+      const user = await phoneAuthenticate({ phone, country, code, role, name: name.trim() });
       const pendingIntent = useAuthStore.getState().pendingIntent;
       if (pendingIntent) {
         const intentRoute = resolvePendingIntentRoute(pendingIntent, user.role);
@@ -138,27 +148,20 @@ export default function OtpScreen() {
         </Text>
       ) : null}
 
-      <View style={styles.newAccountBlock}>
-        <Text variant="label" color="secondary">
-          {t('auth.newToGigLink')}
-        </Text>
-        <Text variant="caption" color="muted">
-          {t('auth.newAccountNote')}
-        </Text>
-      </View>
-
-      <Input
-        label={t('auth.fullName')}
-        value={name}
-        onChangeText={(value) => {
-          clearError();
-          setName(value);
-        }}
-        autoCapitalize="words"
-        textContentType="name"
-        placeholder={t('auth.namePlaceholder')}
-        editable={!isLoading && !verifying}
-      />
+      {isSignUp ? (
+        <Input
+          label={t('auth.fullName')}
+          value={name}
+          onChangeText={(value) => {
+            clearError();
+            setName(value);
+          }}
+          autoCapitalize="words"
+          textContentType="name"
+          placeholder={t('auth.namePlaceholder')}
+          editable={!isLoading && !verifying}
+        />
+      ) : null}
 
       <RoleSelector value={role} onChange={setRole} disabled={isLoading || verifying} />
 
@@ -166,7 +169,13 @@ export default function OtpScreen() {
         label={(isLoading || verifying) ? t('auth.verifying') : t('auth.verifyContinue')}
         onPress={() => void handleVerify()}
         loading={isLoading || verifying}
-        disabled={!phone || code.length !== 6 || verifying || isLoading}
+        disabled={
+          !phone ||
+          code.length !== 6 ||
+          (isSignUp && !name.trim()) ||
+          verifying ||
+          isLoading
+        }
         fullWidth
       />
     </AuthShell>
@@ -179,8 +188,5 @@ const styles = StyleSheet.create({
   },
   resendRow: {
     alignItems: 'center',
-  },
-  newAccountBlock: {
-    gap: spacing.xs,
   },
 });

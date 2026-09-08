@@ -38,7 +38,7 @@ export function ImagePickerField({ label, value, type, onChange }: ImagePickerFi
       if (!permission.granted) {
         const message =
           permission.canAskAgain === false
-            ? 'Photo access is denied. Please enable photo access for GigLink in your device settings.'
+            ? 'Photo access is denied. Please enable photo access for FixMate in your device settings.'
             : 'Photo access is required to set your photo. Please allow access when prompted.';
         setError(message);
         return;

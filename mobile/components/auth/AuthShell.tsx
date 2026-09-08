@@ -26,7 +26,7 @@ export function AuthShell({ title, subtitle, children }: AuthShellProps) {
             <View style={styles.wordmarkRow}>
               <View style={styles.wordmarkDot} />
               <Text variant="headingLg" color="brand">
-                GigLink
+                FixMate
               </Text>
             </View>
             <Text variant="headingXl" color="primary" style={styles.title}>

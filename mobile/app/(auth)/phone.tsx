@@ -1,4 +1,4 @@
-import { router, type Href } from 'expo-router';
+import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -26,10 +26,16 @@ const COUNTRY_OPTIONS: CountryOption[] = [
 
 export default function PhoneAuthScreen() {
   const { t } = useTranslation();
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const mode = params.mode === 'signup' ? 'signup' : 'signin';
+
   const [country, setCountry] = useState<string>('IN');
   const [phone, setPhone] = useState('');
+  const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const isSignUp = mode === 'signup';
 
   const handleContinue = async () => {
     setError(null);
@@ -44,7 +50,12 @@ export default function PhoneAuthScreen() {
       await authApi.sendPhoneOtp({ phone: phone.trim(), country });
       router.push({
         pathname: '/(auth)/otp',
-        params: { phone: phone.trim(), country },
+        params: {
+          phone: phone.trim(),
+          country,
+          mode,
+          name: name.trim(),
+        },
       } as unknown as Href);
     } catch (err) {
       setError(getApiErrorMessage(err, t('auth.unableSendCode')));
@@ -66,7 +77,10 @@ export default function PhoneAuthScreen() {
   };
 
   return (
-    <AuthShell title={t('auth.continueWithPhone')} subtitle={t('auth.phoneSubtitle')}>
+    <AuthShell
+      title={isSignUp ? t('auth.createAccount') : t('auth.continueWithPhone')}
+      subtitle={isSignUp ? t('auth.phoneSignUpSubtitle') : t('auth.phoneSubtitle')}
+    >
       <View style={styles.backRow}>
         <Pressable
           accessibilityRole="button"
@@ -74,10 +88,25 @@ export default function PhoneAuthScreen() {
           onPress={() => router.back()}
         >
           <Text variant="bodyMd" color="brand">
-            {t('auth.backToSignIn')}
+            {isSignUp ? t('common.back') : t('auth.backToSignIn')}
           </Text>
         </Pressable>
       </View>
+
+      {isSignUp ? (
+        <Input
+          label={t('auth.fullName')}
+          value={name}
+          onChangeText={(value) => {
+            setError(null);
+            setName(value);
+          }}
+          autoComplete="name"
+          textContentType="name"
+          placeholder={t('auth.namePlaceholder')}
+          editable={!isLoading}
+        />
+      ) : null}
 
       <View style={styles.countryBlock}>
         <Text variant="label" color="secondary">
@@ -144,6 +173,7 @@ export default function PhoneAuthScreen() {
         label={isLoading ? t('auth.sendingCode') : t('auth.sendCode')}
         onPress={() => void handleContinue()}
         loading={isLoading}
+        disabled={(isSignUp && !name.trim()) || isLoading}
         fullWidth
       />
     </AuthShell>

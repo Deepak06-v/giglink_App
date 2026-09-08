@@ -7,7 +7,7 @@ const LOGO = require('@/assets/images/splash-icon.png');
 
 export function AuthLoadingScreen() {
   return (
-    <View style={styles.container} accessibilityRole="progressbar" accessibilityLabel="GigLink loading">
+    <View style={styles.container} accessibilityRole="progressbar" accessibilityLabel="FixMate loading">
       <Image
         source={LOGO}
         style={styles.logo}
@@ -15,7 +15,7 @@ export function AuthLoadingScreen() {
         accessibilityIgnoresInvertColors
       />
       <Text variant="headingXl" color="primary" style={styles.wordmark}>
-        GigLink
+        FixMate
       </Text>
     </View>
   );

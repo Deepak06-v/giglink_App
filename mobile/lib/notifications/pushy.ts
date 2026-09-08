@@ -59,7 +59,7 @@ async function onPushyNotification(data: string | object): Promise<void> {
   }
 
   const copy = stringValue(data, 'title');
-  const title = copy ?? 'GigLink';
+  const title = copy ?? 'FixMate';
   const message = stringValue(data, 'message') ?? 'You have a new notification';
 
   Pushy.notify(title, message, data);

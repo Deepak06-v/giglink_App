@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "GigLink",
+    "name": "FixMate",
     "slug": "giglink",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -53,7 +53,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "GigLink needs access to your photos so you can set your profile photo or company logo."
+          "photosPermission": "FixMate needs access to your photos so you can set your profile photo or company logo."
         }
       ],
       "pushy-expo-plugin"
