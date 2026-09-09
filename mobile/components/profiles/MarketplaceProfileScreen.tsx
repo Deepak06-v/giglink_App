@@ -5,12 +5,15 @@ import { DetailHeader } from '@/components/layout/DetailHeader';
 import { Screen } from '@/components/layout/Screen';
 import { Star } from '@/components/icons';
 import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
-import { Badge, Card, EmptyState, ErrorState, Skeleton, Text } from '@/components/ui';
+import { ReviewCard } from '@/components/reviews/ReviewCard';
+import { Badge, Button, Card, EmptyState, ErrorState, Skeleton, Text } from '@/components/ui';
 import { colors, radius, spacing } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api/errors';
+import { getUserReviews } from '@/lib/api/reviews';
 import { translate } from '@/lib/i18n';
 import type {
   EmployerMarketplaceProfile,
+  Review,
   WorkerMarketplaceProfile,
 } from '@/types';
 
@@ -21,6 +24,8 @@ interface MarketplaceProfileScreenProps {
   subtitle?: string;
   userId: string;
   loadProfile: (userId: string) => Promise<MarketplaceProfile>;
+  /** Optional handler for the "view all reviews" entry point. */
+  onViewReviews?: () => void;
 }
 
 const AVAILABILITY_VARIANT: Record<
@@ -41,10 +46,12 @@ export function MarketplaceProfileScreen({
   subtitle,
   userId,
   loadProfile,
+  onViewReviews,
 }: MarketplaceProfileScreenProps) {
   const [profile, setProfile] = useState<MarketplaceProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [recentReviews, setRecentReviews] = useState<Review[]>([]);
 
   const load = useCallback(async () => {
     if (!userId) {
@@ -66,6 +73,28 @@ export function MarketplaceProfileScreen({
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!profile || profile.rating.totalReviews <= 0) {
+      setRecentReviews([]);
+      return;
+    }
+    let active = true;
+    getUserReviews(userId, 1, 3)
+      .then((data) => {
+        if (active) {
+          setRecentReviews(data.reviews);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setRecentReviews([]);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [profile, userId]);
 
   if (loading) {
     return (
@@ -163,6 +192,26 @@ export function MarketplaceProfileScreen({
           </Text>
         </View>
       )}
+
+      {profile.rating.totalReviews > 0 && recentReviews.length > 0 ? (
+        <View style={styles.reviewsBlock}>
+          <Text variant="label" color="secondary">
+            {translate('review.recent')}
+          </Text>
+          {recentReviews.map((review) => (
+            <ReviewCard key={review._id} review={review} />
+          ))}
+          {onViewReviews ? (
+            <Button
+              label={translate('review.viewAll')}
+              variant="secondary"
+              onPress={onViewReviews}
+              style={styles.viewAllButton}
+              fullWidth
+            />
+          ) : null}
+        </View>
+      ) : null}
 
       {isWorker ? (
         <WorkerSections profile={profile as WorkerMarketplaceProfile} />
@@ -275,6 +324,12 @@ const styles = StyleSheet.create({
   },
   noRating: {
     marginBottom: spacing.sm,
+  },
+  reviewsBlock: {
+    gap: spacing.sm,
+  },
+  viewAllButton: {
+    marginTop: spacing.sm,
   },
   section: {
     gap: spacing.sm,

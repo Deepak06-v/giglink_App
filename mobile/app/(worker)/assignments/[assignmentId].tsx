@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { MapPin } from '@/components/icons';
 import { JobMapPreview } from '@/components/maps/JobMapPreview';
 import { DetailHeader } from '@/components/layout/DetailHeader';
@@ -9,6 +9,8 @@ import { Badge, Button, Card, ConfirmDialog, ErrorState, Text } from '@/componen
 import { colors, spacing } from '@/constants/theme';
 import { completeAssignment, getAssignmentById } from '@/lib/api/assignments';
 import { getApiErrorMessage } from '@/lib/api/errors';
+import { getWorkerReviewStatus } from '@/lib/api/reviews';
+import type { WorkerReviewStatus } from '@/lib/api/reviews';
 import { useTranslation } from '@/lib/i18n';
 import type { Assignment, AssignmentCompletion } from '@/types';
 import {
@@ -21,6 +23,7 @@ import {
   isAssignmentUpcoming,
 } from '@/utils/formatJob';
 import { openInMaps } from '@/utils/maps';
+import { workerReviewSubmitRoute } from '@/utils/routing';
 
 function statusToken(assignment: Assignment): string {
   if (assignment.status === 'COMPLETED') {
@@ -34,37 +37,66 @@ function statusToken(assignment: Assignment): string {
 
 export default function AssignmentDetailsScreen() {
   const { t } = useTranslation();
+  const router = useRouter();
   const { assignmentId } = useLocalSearchParams<{ assignmentId: string }>();
 
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [completion, setCompletion] = useState<AssignmentCompletion | null>(null);
+  const [reviewStatus, setReviewStatus] = useState<WorkerReviewStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
   const [completedSuccess, setCompletedSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [completeError, setCompleteError] = useState<string | null>(null);
+  const didFocusOnce = useRef(false);
 
-  const loadAssignment = useCallback(async () => {
-    if (!assignmentId) {
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getAssignmentById(assignmentId);
-      setAssignment(data.assignment);
-      setCompletion(data.completion);
-    } catch (err) {
-      setError(getApiErrorMessage(err, t('assignment.unableLoadAssignment')));
-    } finally {
-      setLoading(false);
-    }
-  }, [assignmentId, t]);
+  const loadAssignment = useCallback(
+    async (silent = false) => {
+      if (!assignmentId) {
+        return;
+      }
+      if (!silent) {
+        setLoading(true);
+      }
+      setError(null);
+      try {
+        const data = await getAssignmentById(assignmentId);
+        setAssignment(data.assignment);
+        setCompletion(data.completion);
+        if (data.assignment.job.status === 'COMPLETED') {
+          try {
+            setReviewStatus(await getWorkerReviewStatus(data.assignment.job._id));
+          } catch {
+            setReviewStatus(null);
+          }
+        } else {
+          setReviewStatus(null);
+        }
+      } catch (err) {
+        setError(getApiErrorMessage(err, t('assignment.unableLoadAssignment')));
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
+      }
+    },
+    [assignmentId, t],
+  );
 
   useEffect(() => {
     void loadAssignment();
   }, [loadAssignment]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (didFocusOnce.current) {
+        void loadAssignment(true);
+      } else {
+        didFocusOnce.current = true;
+      }
+    }, [loadAssignment]),
+  );
 
   const canComplete =
     assignment?.status === 'ACTIVE' &&
@@ -152,6 +184,23 @@ export default function AssignmentDetailsScreen() {
               </Text>
             ) : null}
           </View>
+        ) : job.status === 'COMPLETED' && reviewStatus ? (
+          reviewStatus.hasReviewed ? (
+            <View style={styles.successBox}>
+              <Text variant="headingMd" color="success" align="center">
+                {t('review.reviewSubmitted')}
+              </Text>
+              <Text variant="bodyMd" color="secondary" align="center">
+                {t('review.reviewSubmittedHint')}
+              </Text>
+            </View>
+          ) : reviewStatus.canReview ? (
+            <Button
+              label={t('review.rateEmployer')}
+              onPress={() => router.push(workerReviewSubmitRoute(job._id))}
+              fullWidth
+            />
+          ) : undefined
         ) : undefined
       }
       contentContainerStyle={styles.content}

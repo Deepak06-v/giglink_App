@@ -26,6 +26,8 @@ import { normalizePhone } from "./utils/phone.js";
 
 const app = express();
 
+app.set("trust proxy", 1);
+
 // ======================================================
 // Request Logger
 // ======================================================
@@ -118,40 +120,62 @@ const otpMessage = {
 
 const sendOtpIpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
+
   max: 10,
+
   message: otpMessage,
+
   standardHeaders: true,
+
   legacyHeaders: false,
 });
 
 const phoneKeyGenerator = async (req) => {
-  const phone = normalizePhone(req.body?.phone, req.body?.country);
+  const phone = normalizePhone(
+    req.body?.phone,
+    req.body?.country
+  );
+
   return phone || ipKeyGenerator(req.ip);
 };
 
 const sendOtpPhoneLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
+
   max: 5,
+
   message: otpMessage,
+
   standardHeaders: true,
+
   legacyHeaders: false,
+
   keyGenerator: phoneKeyGenerator,
 });
 
 const verifyOtpIpLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
+
   max: 20,
+
   message: otpMessage,
+
   standardHeaders: true,
+
   legacyHeaders: false,
 });
 
 const verifyOtpPhoneLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
+
   max: 10,
+
   message: otpMessage,
+
   standardHeaders: true,
+
   legacyHeaders: false,
+
   keyGenerator: phoneKeyGenerator,
 });
 
@@ -173,8 +197,18 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth/signup", authLimiter);
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth/google", authLimiter);
-app.use("/api/auth/phone/send-otp", sendOtpIpLimiter, sendOtpPhoneLimiter);
-app.use("/api/auth/phone/verify-otp", verifyOtpIpLimiter, verifyOtpPhoneLimiter);
+
+app.use(
+  "/api/auth/phone/send-otp",
+  sendOtpIpLimiter,
+  sendOtpPhoneLimiter
+);
+
+app.use(
+  "/api/auth/phone/verify-otp",
+  verifyOtpIpLimiter,
+  verifyOtpPhoneLimiter
+);
 
 app.use("/api/auth", authRoutes);
 
@@ -207,14 +241,15 @@ app.use("/api/employer", employerReviewRoutes);
 app.use("/api/notifications/devices", deviceRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/location", locationRoutes);
+
 // ======================================================
-// Profile media uploads (shared worker + employer)
+// Profile media uploads
 // ======================================================
 
 app.use("/api/profile", uploadRoutes);
 
 // ======================================================
-// Marketplace profiles (public other-user view)
+// Marketplace profiles
 // ======================================================
 
 app.use("/api/marketplace", marketplaceRoutes);

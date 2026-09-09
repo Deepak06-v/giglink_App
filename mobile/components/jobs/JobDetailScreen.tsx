@@ -14,6 +14,7 @@ import {
 import { JobMapPreview } from '@/components/maps/JobMapPreview';
 import { DetailHeader } from '@/components/layout/DetailHeader';
 import { Screen } from '@/components/layout/Screen';
+import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
 import { Badge, Button, Card, CompletionRing, ErrorState, Skeleton, Text } from '@/components/ui';
 import { colors, radius, spacing } from '@/constants/theme';
 import { applyToJob } from '@/lib/api/applications';
@@ -275,12 +276,24 @@ export function JobDetailScreen({ jobId }: JobDetailScreenProps) {
           <Pressable
             onPress={() => router.push(workerMarketplaceProfileRoute(employerId))}
             accessibilityRole="button"
-            style={styles.employerRow}
+            accessibilityLabel={t('job.viewEmployerProfile')}
+            style={({ pressed }) => [styles.employerCard, pressed && styles.employerCardPressed]}
           >
-            <Text variant="bodyLg" color="brand" numberOfLines={1} style={styles.employerLink}>
-              {getEmployerName(job.employer)}
-            </Text>
-            <ChevronRight size={16} color={colors.brand.primary} />
+            <ProfileAvatar
+              source={typeof employerObj === 'object' ? employerObj.logo : undefined}
+              name={getEmployerName(job.employer)}
+              size={40}
+              square
+            />
+            <View style={styles.employerText}>
+              <Text variant="bodyLg" color="primary" numberOfLines={1}>
+                {getEmployerName(job.employer)}
+              </Text>
+              <Text variant="caption" color="secondary">
+                {t('job.viewEmployerProfile')}
+              </Text>
+            </View>
+            <ChevronRight size={18} color={colors.text.muted} />
           </Pressable>
         ) : (
           <Text variant="bodyLg" color="secondary">
@@ -477,15 +490,25 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.sm,
   },
-  employerRow: {
+  employerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    alignSelf: 'flex-start',
-    paddingVertical: 2,
+    gap: spacing.md,
+    alignSelf: 'stretch',
+    backgroundColor: colors.surface.card,
+    borderWidth: 1,
+    borderColor: colors.border.default,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginTop: spacing.sm,
   },
-  employerLink: {
-    flexShrink: 1,
+  employerCardPressed: {
+    opacity: 0.82,
+  },
+  employerText: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
   },
   section: {
     gap: spacing.sm,

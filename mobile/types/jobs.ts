@@ -276,3 +276,26 @@ export interface Notification {
   relatedAssignment?: string;
   createdAt: string;
 }
+
+export interface ReviewAuthor {
+  id: string;
+  name?: string;
+  profileImage?: string;
+  companyName?: string;
+  logo?: string;
+}
+
+export interface ReviewJobRef {
+  id: string;
+  title?: string;
+  category?: JobCategory;
+}
+
+export interface Review {
+  _id: string;
+  reviewer: ReviewAuthor;
+  job: ReviewJobRef | null;
+  rating: number;
+  comment?: string;
+  createdAt?: string;
+}

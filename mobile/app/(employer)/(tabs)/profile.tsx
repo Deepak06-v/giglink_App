@@ -1,16 +1,17 @@
 import { useCallback, useState } from 'react';
 import { Image, RefreshControl, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Building2 } from '@/components/icons';
+import { Building2, Star } from '@/components/icons';
 import { Screen } from '@/components/layout/Screen';
-import { Badge, Button, Card, ErrorState, Skeleton, Text } from '@/components/ui';
+import { Badge, Button, Card, ErrorState, Skeleton, StatRow, Text } from '@/components/ui';
 import { colors, radius, spacing } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { getEmployerProfile } from '@/lib/api/profiles';
+import { getUserReviews } from '@/lib/api/reviews';
 import { translate, type TranslationKey } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
-import type { EmployerProfile as EmployerProfileType } from '@/types';
-import { employerEditProfileRoute } from '@/utils/routing';
+import type { EmployerProfile as EmployerProfileType, TrustSummary } from '@/types';
+import { employerEditProfileRoute, employerReviewsListRoute } from '@/utils/routing';
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
@@ -24,6 +25,16 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     </View>
   );
 }
+
+function SectionHeader({ label }: { label: string }) {
+  return (
+    <Text variant="caption" color="muted" style={styles.sectionHeader}>
+      {label.toUpperCase()}
+    </Text>
+  );
+}
+
+const NO_REVIEWS_SUMMARY: TrustSummary = { averageRating: null, totalReviews: 0 };
 
 const MISSING_FIELD_LABELS: Record<string, TranslationKey> = {
   COMPANY_NAME: 'profile.completion.addCompanyName',
@@ -67,6 +78,7 @@ export default function EmployerProfileScreen() {
   const logout = useAuthStore((state) => state.logout);
 
   const [profile, setProfile] = useState<EmployerProfileType | null>(null);
+  const [ratingSummary, setRatingSummary] = useState<TrustSummary>(NO_REVIEWS_SUMMARY);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,8 +92,15 @@ export default function EmployerProfileScreen() {
     setError(null);
 
     try {
-      const data = await getEmployerProfile();
+      const currentUser = useAuthStore.getState().user;
+      const [data, reviewData] = await Promise.all([
+        getEmployerProfile(),
+        currentUser?.id
+          ? getUserReviews(currentUser.id, 1, 1).catch(() => null)
+          : Promise.resolve(null),
+      ]);
       setProfile(data);
+      setRatingSummary(reviewData?.summary ?? NO_REVIEWS_SUMMARY);
     } catch (err) {
       setError(getApiErrorMessage(err, translate('profile.unableLoadProfile')));
     } finally {
@@ -145,9 +164,30 @@ export default function EmployerProfileScreen() {
         <Badge label={translate('profile.employer')} variant="brand" />
       </View>
 
-      <Text variant="headingMd" color="primary" style={styles.sectionTitle}>
-        {translate('profile.profileInformation')}
-      </Text>
+      <SectionHeader label={translate('review.reviews')} />
+      <Card style={styles.infoCard}>
+        <StatRow
+          icon={Star}
+          iconColor={colors.semantic.warning}
+          iconBackground={colors.semanticTint.warning}
+          title={translate('review.reviews')}
+          subtitle={
+            ratingSummary.totalReviews > 0 && ratingSummary.averageRating !== null
+              ? `${ratingSummary.averageRating.toFixed(1)} · ${ratingSummary.totalReviews} ${
+                  ratingSummary.totalReviews === 1 ? 'review' : 'reviews'
+                }`
+              : translate('marketplace.noReviews')
+          }
+          showChevron
+          onPress={() => {
+            if (user?.id) {
+              router.push(employerReviewsListRoute(user.id));
+            }
+          }}
+        />
+      </Card>
+
+      <SectionHeader label={translate('profile.profileInformation')} />
       <Card style={styles.infoCard}>
         <InfoRow label={translate('profile.email')} value={user?.email ?? '—'} />
         <InfoRow label={translate('profile.phone')} value={profile?.phone ?? '—'} />
@@ -158,9 +198,7 @@ export default function EmployerProfileScreen() {
       </Card>
 
       {profile?.companyDescription ? (
-        <Text variant="headingMd" color="primary" style={styles.sectionTitle}>
-          {translate('profile.about')}
-        </Text>
+        <SectionHeader label={translate('profile.about')} />
       ) : null}
       {profile?.companyDescription ? (
         <Card style={styles.infoCard}>
@@ -212,8 +250,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.sm,
   },
-  sectionTitle: {
+  sectionHeader: {
     marginBottom: spacing.md,
+    marginTop: spacing.md,
+    letterSpacing: 0.6,
   },
   infoCard: {
     gap: spacing.md,

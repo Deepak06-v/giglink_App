@@ -2,6 +2,7 @@ import { router, useLocalSearchParams, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { AuthBackButton } from '@/components/auth/AuthBackButton';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { Button, Input, Text } from '@/components/ui';
 import { colors, radius, spacing } from '@/constants/theme';
@@ -82,15 +83,7 @@ export default function PhoneAuthScreen() {
       subtitle={isSignUp ? t('auth.phoneSignUpSubtitle') : t('auth.phoneSubtitle')}
     >
       <View style={styles.backRow}>
-        <Pressable
-          accessibilityRole="button"
-          disabled={isLoading}
-          onPress={() => router.back()}
-        >
-          <Text variant="bodyMd" color="brand">
-            {isSignUp ? t('common.back') : t('auth.backToSignIn')}
-          </Text>
-        </Pressable>
+        <AuthBackButton />
       </View>
 
       {isSignUp ? (

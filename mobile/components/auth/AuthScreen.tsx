@@ -243,7 +243,7 @@ export function AuthScreen({ mode }: AuthScreenProps) {
           label={googleLoading ? t('auth.connectingGoogle') : t('auth.continueWithGoogle')}
           onPress={() => void handleGoogle()}
           loading={googleLoading}
-          disabled={isLoading}
+          disabled
           fullWidth
         />
         <Button

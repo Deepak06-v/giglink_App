@@ -15,18 +15,19 @@ import {
 } from '@/components/ui';
 import {
   Bell,
-  Briefcase,
   CheckCircle2,
   ClipboardList,
   FileText,
   LogOut,
-  User,
+  Pencil,
+  Star,
 } from '@/components/icons';
 import { colors, radius, spacing } from '@/constants/theme';
 import { getApplications } from '@/lib/api/applications';
 import { getAssignments } from '@/lib/api/assignments';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { getWorkerProfile } from '@/lib/api/profiles';
+import { getUserReviews } from '@/lib/api/reviews';
 import { translate, type TranslationKey } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
 import {
@@ -34,8 +35,9 @@ import {
   workerAssignmentsTabRoute,
   workerEditProfileRoute,
   workerNotificationsRoute,
+  workerReviewsListRoute,
 } from '@/utils/routing';
-import type { WorkerProfile } from '@/types';
+import type { TrustSummary, WorkerProfile } from '@/types';
 
 interface ProfileStats {
   applications: number;
@@ -65,6 +67,7 @@ const COMPLETION_HINTS: Record<WorkerMissingField, TranslationKey> = {
 };
 
 const PROFILE_SKELETON_ROWS = 4;
+const NO_REVIEWS_SUMMARY: TrustSummary = { averageRating: null, totalReviews: 0 };
 
 function ProfileSkeleton() {
   return (
@@ -89,7 +92,7 @@ function ProfileSkeleton() {
 function SectionHeader({ label }: { label: string }) {
   return (
     <Text variant="caption" color="muted" style={styles.sectionHeader}>
-      {label}
+      {label.toUpperCase()}
     </Text>
   );
 }
@@ -113,6 +116,7 @@ export default function WorkerProfileScreen() {
   const logout = useAuthStore((state) => state.logout);
 
   const [profile, setProfile] = useState<WorkerProfile | null>(null);
+  const [ratingSummary, setRatingSummary] = useState<TrustSummary>(NO_REVIEWS_SUMMARY);
   const [stats, setStats] = useState<ProfileStats>({
     applications: 0,
     assignments: 0,
@@ -131,15 +135,22 @@ export default function WorkerProfileScreen() {
     setError(null);
 
     try {
-      const [profileData, applicationsData, assignmentsData] = await Promise.all([
+      const currentUser = useAuthStore.getState().user;
+      const [profileData, applicationsData, assignmentsData, reviewData] = await Promise.all([
         getWorkerProfile(),
         getApplications(1, 50),
         getAssignments(1, 50),
+        currentUser?.id
+          ? getUserReviews(currentUser.id, 1, 1).catch(() => null)
+          : Promise.resolve(null),
       ]);
 
-      const completed = assignmentsData.assignments.filter((item) => item.status === 'COMPLETED').length;
+      const completed = assignmentsData.assignments.filter(
+        (item) => item.status === 'COMPLETED',
+      ).length;
 
       setProfile(profileData);
+      setRatingSummary(reviewData?.summary ?? NO_REVIEWS_SUMMARY);
       setStats({
         applications: applicationsData.pagination.total,
         assignments: assignmentsData.pagination.total,
@@ -204,12 +215,16 @@ export default function WorkerProfileScreen() {
     return firstMissing ? COMPLETION_HINTS[firstMissing] : COMPLETION_HINTS.SKILLS;
   })();
 
-  const skillsLabel = profile?.skills?.length
-    ? `${profile.skills.length} ${profile.skills.length === 1 ? 'skill' : 'skills'}`
-    : translate('profile.completion.addSkills');
+  const reviewsCount = ratingSummary.totalReviews;
+  const ratingSubtitle =
+    reviewsCount > 0 && ratingSummary.averageRating !== null
+      ? `${ratingSummary.averageRating.toFixed(1)} · ${reviewsCount} ${reviewsCount === 1 ? 'review' : 'reviews'}`
+      : translate('marketplace.noReviews');
 
   const locationLabel = profile?.location?.city
-    ? [profile.location.city, profile.location.state].filter(Boolean).join(', ')
+    ? [profile.location.city, profile.location.state, profile.location.pincode]
+        .filter(Boolean)
+        .join(', ')
     : translate('profile.completion.addLocation');
 
   const availabilityBadge = (() => {
@@ -253,9 +268,7 @@ export default function WorkerProfileScreen() {
             {user?.name ?? translate('common.worker')}
           </Text>
           <Text variant="bodyMd" color="secondary" numberOfLines={1}>
-            {profile?.location?.city
-              ? [profile.location.city, profile.location.state].filter(Boolean).join(', ')
-              : translate('profile.completion.addLocation')}
+            {locationLabel}
           </Text>
           <View style={styles.headerMeta}>{availabilityBadge}</View>
         </View>
@@ -280,7 +293,9 @@ export default function WorkerProfileScreen() {
                 <View key={field} style={styles.missingRow}>
                   <View style={styles.missingDot} />
                   <Text variant="bodyMd" color="secondary" style={styles.missingText}>
-                    {translate(COMPLETION_HINTS[field as WorkerMissingField] ?? 'profile.completion.addName')}
+                    {translate(
+                      COMPLETION_HINTS[field as WorkerMissingField] ?? 'profile.completion.addName',
+                    )}
                   </Text>
                 </View>
               ))}
@@ -296,21 +311,27 @@ export default function WorkerProfileScreen() {
         </Card>
       ) : null}
 
+      <SectionHeader label={translate('review.reviews')} />
+      <Card style={styles.groupCard}>
+        <StatRow
+          icon={Star}
+          iconColor={colors.semantic.warning}
+          iconBackground={colors.semanticTint.warning}
+          title={translate('review.reviews')}
+          subtitle={ratingSubtitle}
+          showChevron
+          onPress={() => {
+            if (user?.id) {
+              router.push(workerReviewsListRoute(user.id));
+            }
+          }}
+        />
+      </Card>
+
       <SectionHeader label={translate('profile.profileInformation')} />
       <Card style={styles.groupCard}>
         <InfoRow label={translate('profile.email')} value={user?.email ?? ''} />
         <InfoRow label={translate('profile.phone')} value={profile?.phone ?? ''} />
-        <InfoRow
-          label={translate('profile.location')}
-          value={
-            profile?.location
-              ? [profile.location.city, profile.location.state, profile.location.pincode]
-                  .filter(Boolean)
-                  .join(', ')
-              : ''
-          }
-        />
-        <InfoRow label={translate('profile.experience')} value={profile?.experience ?? ''} />
       </Card>
 
       {profile?.bio ? (
@@ -324,27 +345,25 @@ export default function WorkerProfileScreen() {
         </>
       ) : null}
 
-      <SectionHeader label={translate('profile.sections.profile')} />
+      <SectionHeader label={translate('profile.sections.skillsExperience')} />
       <Card style={styles.groupCard}>
-        <StatRow
-          icon={User}
-          iconColor={colors.brand.primary}
-          iconBackground={colors.brand.tint}
-          title={translate('profile.sections.personalInformation')}
-          subtitle={locationLabel}
-          showChevron
-          onPress={() => router.push(workerEditProfileRoute())}
-        />
-        <View style={styles.divider} />
-        <StatRow
-          icon={Briefcase}
-          iconColor={colors.accent.opportunity}
-          iconBackground={colors.accent.tint}
-          title={translate('profile.sections.skillsExperience')}
-          subtitle={skillsLabel}
-          showChevron
-          onPress={() => router.push(workerEditProfileRoute())}
-        />
+        {profile?.skills?.length ? (
+          <View style={styles.skillsRow}>
+            {profile.skills.map((skill) => (
+              <SkillTag key={skill} label={skill} variant="accent" />
+            ))}
+          </View>
+        ) : (
+          <Text variant="bodyMd" color="secondary">
+            {translate('profile.completion.addSkills')}
+          </Text>
+        )}
+        {profile?.experience ? (
+          <>
+            <View style={styles.divider} />
+            <InfoRow label={translate('profile.experience')} value={profile.experience} />
+          </>
+        ) : null}
       </Card>
 
       <SectionHeader label={translate('profile.sections.activity')} />
@@ -377,6 +396,13 @@ export default function WorkerProfileScreen() {
       <SectionHeader label={translate('profile.sections.settings')} />
       <Card style={styles.groupCard}>
         <StatRow
+          icon={Pencil}
+          title={translate('profile.editProfile')}
+          showChevron
+          onPress={() => router.push(workerEditProfileRoute())}
+        />
+        <View style={styles.divider} />
+        <StatRow
           icon={Bell}
           title={translate('common.notifications')}
           showChevron
@@ -392,17 +418,6 @@ export default function WorkerProfileScreen() {
           onPress={() => void logout()}
         />
       </Card>
-
-      {profile?.skills?.length ? (
-        <>
-          <SectionHeader label={translate('profile.sections.skillsExperience')} />
-          <View style={styles.skillsRow}>
-            {profile.skills.map((skill) => (
-              <SkillTag key={skill} label={skill} variant="accent" />
-            ))}
-          </View>
-        </>
-      ) : null}
     </Screen>
   );
 }
@@ -482,7 +497,6 @@ const styles = StyleSheet.create({
   sectionHeader: {
     marginBottom: spacing.md,
     marginTop: spacing.md,
-    textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
   groupCard: {
@@ -500,7 +514,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
-    marginBottom: spacing['2xl'],
   },
   skeleton: {
     gap: spacing.lg,

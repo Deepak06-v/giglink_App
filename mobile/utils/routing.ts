@@ -90,3 +90,19 @@ export function workerApplicationsTabRoute(): Href {
 export function workerAssignmentsTabRoute(): Href {
   return '/(worker)/(tabs)/assignments';
 }
+
+export function workerReviewSubmitRoute(jobId: string): Href {
+  return { pathname: '/(worker)/reviews/submit/[jobId]', params: { jobId } };
+}
+
+export function employerReviewSubmitRoute(jobId: string, workerId: string, workerName: string): Href {
+  return { pathname: '/(employer)/reviews/submit/[jobId]', params: { jobId, workerId, workerName } };
+}
+
+export function workerReviewsListRoute(userId: string): Href {
+  return { pathname: '/(worker)/reviews/list/[userId]', params: { userId } };
+}
+
+export function employerReviewsListRoute(userId: string): Href {
+  return { pathname: '/(employer)/reviews/list/[userId]', params: { userId } };
+}

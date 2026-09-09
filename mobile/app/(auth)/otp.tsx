@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { AuthBackButton } from '@/components/auth/AuthBackButton';
 import { AuthShell } from '@/components/auth/AuthShell';
 import { RoleSelector } from '@/components/auth/RoleSelector';
 import { Button, Input, Text } from '@/components/ui';
@@ -94,15 +95,7 @@ export default function OtpScreen() {
   return (
     <AuthShell title={t('auth.enterCode')} subtitle={t('auth.otpSubtitle')}>
       <View style={styles.backRow}>
-        <Pressable
-          accessibilityRole="button"
-          disabled={isLoading}
-          onPress={() => router.back()}
-        >
-          <Text variant="bodyMd" color="brand">
-            {t('common.back')}
-          </Text>
-        </Pressable>
+        <AuthBackButton />
       </View>
 
       <Input

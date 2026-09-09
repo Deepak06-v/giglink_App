@@ -1,17 +1,21 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { MapPin, Users } from '@/components/icons';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { MapPin, Star, Users } from '@/components/icons';
 import { employerJobStatusVariant } from '@/components/cards/EmployerJobCard';
 import { JobMapPreview } from '@/components/maps/JobMapPreview';
 import { DetailHeader } from '@/components/layout/DetailHeader';
 import { Screen } from '@/components/layout/Screen';
+import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
 import { Badge, Button, Card, CompletionRing, ConfirmDialog, ErrorState, Text } from '@/components/ui';
 import { colors, radius, spacing } from '@/constants/theme';
+import { getEmployerApplicationsForJob } from '@/lib/api/applications';
 import { getApiErrorMessage, getProfileCompletionInfo } from '@/lib/api/errors';
 import { completeJobEmployer, deleteJob, getEmployerJobById, updateJob } from '@/lib/api/jobs';
 import type { JobCompletionInfo } from '@/lib/api/jobs';
 import { getEmployerProfile } from '@/lib/api/profiles';
+import { getEmployerReviewStatus } from '@/lib/api/reviews';
+import type { EmployerReviewStatus } from '@/lib/api/reviews';
 import type { Job } from '@/types';
 import type { ProfileCompletionInfo } from '@/types/auth';
 import {
@@ -24,7 +28,11 @@ import {
 } from '@/utils/formatJob';
 import { useTranslation } from '@/lib/i18n';
 import { openInMaps } from '@/utils/maps';
-import { employerEditJobRoute, employerEditProfileRoute } from '@/utils/routing';
+import {
+  employerEditJobRoute,
+  employerEditProfileRoute,
+  employerReviewSubmitRoute,
+} from '@/utils/routing';
 
 export default function EmployerJobDetailsScreen() {
   const router = useRouter();
@@ -33,6 +41,8 @@ export default function EmployerJobDetailsScreen() {
 
   const [job, setJob] = useState<Job | null>(null);
   const [completion, setCompletion] = useState<JobCompletionInfo | null>(null);
+  const [reviewStatus, setReviewStatus] = useState<EmployerReviewStatus | null>(null);
+  const [workerNames, setWorkerNames] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [mutating, setMutating] = useState(false);
   const [confirmAction, setConfirmAction] = useState<'cancel' | 'delete' | 'complete' | null>(null);
@@ -40,27 +50,71 @@ export default function EmployerJobDetailsScreen() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [incompleteProfile, setIncompleteProfile] = useState<ProfileCompletionInfo | null>(null);
   const [employerPercent, setEmployerPercent] = useState<number | null>(null);
+  const didFocusOnce = useRef(false);
 
-  const loadJob = useCallback(async () => {
-    if (!jobId) {
-      return;
-    }
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getEmployerJobById(jobId);
-      setJob(data.job);
-      setCompletion(data.completion);
-    } catch (err) {
-      setError(getApiErrorMessage(err, t('job.unableLoadDetails')));
-    } finally {
-      setLoading(false);
-    }
-  }, [jobId, t]);
+  const loadJob = useCallback(
+    async (silent = false) => {
+      if (!jobId) {
+        return;
+      }
+      if (!silent) {
+        setLoading(true);
+      }
+      setError(null);
+      try {
+        const data = await getEmployerJobById(jobId);
+        setJob(data.job);
+        setCompletion(data.completion);
+        if (data.job.status === 'COMPLETED') {
+          try {
+            const [reviewData] = await Promise.all([
+              getEmployerReviewStatus(data.job._id),
+              getEmployerApplicationsForJob(data.job._id, 1, 100, 'ACCEPTED')
+                .then((apps) => {
+                  const names = new Map<string, string>();
+                  for (const app of apps.applications) {
+                    if (typeof app.worker !== 'string' && app.worker?.name) {
+                      names.set(app.worker._id, app.worker.name);
+                    }
+                  }
+                  setWorkerNames(names);
+                })
+                .catch(() => {
+                  setWorkerNames(new Map());
+                }),
+            ]);
+            setReviewStatus(reviewData);
+          } catch {
+            setReviewStatus(null);
+          }
+        } else {
+          setReviewStatus(null);
+          setWorkerNames(new Map());
+        }
+      } catch (err) {
+        setError(getApiErrorMessage(err, t('job.unableLoadDetails')));
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
+      }
+    },
+    [jobId, t],
+  );
 
   useEffect(() => {
     void loadJob();
   }, [loadJob]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (didFocusOnce.current) {
+        void loadJob(true);
+      } else {
+        didFocusOnce.current = true;
+      }
+    }, [loadJob]),
+  );
 
   useEffect(() => {
     if (job?.status !== 'DRAFT') {
@@ -311,6 +365,42 @@ export default function EmployerJobDetailsScreen() {
         </Card>
       ) : null}
 
+      {job.status === 'COMPLETED' && reviewStatus && reviewStatus.workers.length > 0 ? (
+        <Card style={styles.section}>
+          <View style={styles.reviewHeader}>
+            <Star size={16} color={colors.semantic.warning} />
+            <Text variant="label" color="secondary">
+              {t('review.reviews')}
+            </Text>
+          </View>
+          <View style={styles.reviewList}>
+            {reviewStatus.workers.map(({ workerId, hasReviewed }) => {
+              const workerName = workerNames.get(workerId) ?? t('common.worker');
+              return (
+                <View key={workerId} style={styles.reviewRow}>
+                  <ProfileAvatar name={workerName} size={32} />
+                  <Text variant="bodyMd" color="primary" numberOfLines={1} style={styles.reviewName}>
+                    {workerName}
+                  </Text>
+                  {hasReviewed ? (
+                    <Badge label={t('review.reviewed')} variant="success" />
+                  ) : (
+                    <Button
+                      label={t('review.rate')}
+                      variant="secondary"
+                      size="sm"
+                      onPress={() =>
+                        router.push(employerReviewSubmitRoute(job._id, workerId, workerName))
+                      }
+                    />
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        </Card>
+      ) : null}
+
       <Card style={styles.section}>
         <Text variant="label" color="secondary">
           {t('job.location')}
@@ -484,6 +574,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
+  },
+  reviewHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  reviewList: {
+    gap: spacing.md,
+  },
+  reviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  reviewName: {
+    flex: 1,
   },
   footer: {
     gap: spacing.sm,
