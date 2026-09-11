@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import type { Href } from 'expo-router';
-import { RefreshControl, StyleSheet, View } from 'react-native';
+import { Linking, RefreshControl, StyleSheet, View } from 'react-native';
 
 import { Screen } from '@/components/layout/Screen';
 import {
@@ -8,8 +9,10 @@ import {
   ClipboardList,
   FileText,
   LogOut,
+  Mail,
   Pencil,
   Star,
+  Trash2,
 } from '@/components/icons';
 import { ProfileAvatar } from '@/components/profiles/ProfileAvatar';
 import {
@@ -17,6 +20,7 @@ import {
   Button,
   Card,
   CompletionRing,
+  ConfirmDialog,
   EmptyState,
   ErrorState,
   Skeleton,
@@ -24,6 +28,7 @@ import {
   StatRow,
   Text,
 } from '@/components/ui';
+import { getApiErrorMessage } from '@/lib/api/errors';
 import { colors, radius, spacing } from '@/constants/theme';
 import { translate, type TranslationKey } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
@@ -55,6 +60,12 @@ export interface OwnProfileCardProps {
   onViewReviews: () => void;
   onNavigate?: (route: string) => void;
   completion?: ProfileCompletion;
+  legalLinks?: {
+    privacy?: string;
+    terms?: string;
+    contact?: string;
+  };
+  onDeleteAccount?: () => Promise<void>;
 }
 
 const WORKER_MISSING_HINTS: Record<string, TranslationKey> = {
@@ -155,8 +166,28 @@ export function OwnProfileCard({
   onViewReviews,
   onNavigate,
   completion,
+  legalLinks,
+  onDeleteAccount,
 }: OwnProfileCardProps) {
   const user = useAuthStore((state) => state.user);
+
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const handleDeleteConfirm = async () => {
+    if (!onDeleteAccount) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await onDeleteAccount();
+      setDeleteVisible(false);
+    } catch (err) {
+      setDeleteError(getApiErrorMessage(err, translate('account.deleteFailed')));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const navigate = (route: Href) => {
     onNavigate?.(route as string);
@@ -440,6 +471,55 @@ export function OwnProfileCard({
           showChevron
           onPress={() => navigate(notificationsRoute)}
         />
+        {legalLinks?.privacy ? (
+          <>
+            <View style={styles.divider} />
+            <StatRow
+              icon={FileText}
+              title={translate('legal.privacyPolicy')}
+              showChevron
+              onPress={() => void Linking.openURL(legalLinks.privacy!)}
+            />
+          </>
+        ) : null}
+        {legalLinks?.terms ? (
+          <>
+            <View style={styles.divider} />
+            <StatRow
+              icon={FileText}
+              title={translate('legal.termsOfService')}
+              showChevron
+              onPress={() => void Linking.openURL(legalLinks.terms!)}
+            />
+          </>
+        ) : null}
+        {legalLinks?.contact ? (
+          <>
+            <View style={styles.divider} />
+            <StatRow
+              icon={Mail}
+              title={translate('legal.contactSupport')}
+              showChevron
+              onPress={() => void Linking.openURL(legalLinks.contact!)}
+            />
+          </>
+        ) : null}
+        {onDeleteAccount ? (
+          <>
+            <View style={styles.divider} />
+            <StatRow
+              icon={Trash2}
+              iconColor={colors.semantic.error}
+              iconBackground={colors.semanticTint.error}
+              title={translate('account.deleteAccount')}
+              showChevron
+              onPress={() => {
+                setDeleteError(null);
+                setDeleteVisible(true);
+              }}
+            />
+          </>
+        ) : null}
         <View style={styles.divider} />
         <StatRow
           icon={LogOut}
@@ -450,6 +530,19 @@ export function OwnProfileCard({
           onPress={onLogout}
         />
       </Card>
+
+      {onDeleteAccount ? (
+        <ConfirmDialog
+          visible={deleteVisible}
+          title={translate('account.deleteDialogTitle')}
+          message={deleteError ?? translate('account.deleteDialogMessage')}
+          confirmLabel={translate('account.deleteConfirm')}
+          destructive
+          loading={deleting}
+          onConfirm={() => void handleDeleteConfirm()}
+          onCancel={() => setDeleteVisible(false)}
+        />
+      ) : null}
     </Screen>
   );
 }

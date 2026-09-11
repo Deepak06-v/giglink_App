@@ -395,6 +395,21 @@ export const en = {
     reviewSubmitted: 'Review submitted',
     reviewSubmittedHint: 'Thanks for your feedback. It helps the FixMate community.',
   },
+  legal: {
+    privacyPolicy: 'Privacy Policy',
+    termsOfService: 'Terms of Service',
+    contactSupport: 'Contact & Support',
+  },
+  account: {
+    profileTitle: 'Account',
+    deleteAccount: 'Delete Account',
+    deleteDialogTitle: 'Delete your account?',
+    deleteDialogMessage:
+      'This permanently deletes your account and personal data. Jobs, applications, assignments, and reviews you were part of remain anonymized for other users. This action cannot be undone.',
+    deleteConfirm: 'Delete',
+    deleteFailed: 'Unable to delete account',
+    deleting: 'Deleting...',
+  },
   day: {
     sun: 'Sun',
     mon: 'Mon',

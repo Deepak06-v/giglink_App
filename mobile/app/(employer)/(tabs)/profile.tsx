@@ -2,9 +2,11 @@ import { useCallback, useState } from 'react';
 import { useFocusEffect, useRouter, type Href } from 'expo-router';
 
 import { OwnProfileCard } from '@/components/profiles/OwnProfileCard';
+import * as authApi from '@/lib/api/auth';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { getEmployerProfile } from '@/lib/api/profiles';
 import { getUserReviews } from '@/lib/api/reviews';
+import { env } from '@/lib/config/env';
 import { translate } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
 import type { EmployerProfile as EmployerProfileType, TrustSummary } from '@/types';
@@ -16,6 +18,11 @@ export default function EmployerProfileScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+
+  const deleteAccount = useCallback(async () => {
+    await authApi.deleteAccount();
+    await logout();
+  }, [logout]);
 
   const [profile, setProfile] = useState<EmployerProfileType | null>(null);
   const [ratingSummary, setRatingSummary] = useState<TrustSummary>(NO_REVIEWS_SUMMARY);
@@ -69,6 +76,12 @@ export default function EmployerProfileScreen() {
       }}
       onNavigate={(route) => router.navigate(route as Href)}
       completion={profile?.completion}
+      onDeleteAccount={() => deleteAccount()}
+      legalLinks={{
+        privacy: `${env.legalBaseUrl}/privacy`,
+        terms: `${env.legalBaseUrl}/terms`,
+        contact: `${env.legalBaseUrl}/contact`,
+      }}
     />
   );
 }

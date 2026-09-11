@@ -4,9 +4,11 @@ import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { OwnProfileCard } from '@/components/profiles/OwnProfileCard';
 import { getApplications } from '@/lib/api/applications';
 import { getAssignments } from '@/lib/api/assignments';
+import * as authApi from '@/lib/api/auth';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { getWorkerProfile } from '@/lib/api/profiles';
 import { getUserReviews } from '@/lib/api/reviews';
+import { env } from '@/lib/config/env';
 import { translate } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
 import type { TrustSummary, WorkerProfile } from '@/types';
@@ -18,6 +20,11 @@ export default function WorkerProfileScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+
+  const deleteAccount = useCallback(async () => {
+    await authApi.deleteAccount();
+    await logout();
+  }, [logout]);
 
   const [profile, setProfile] = useState<WorkerProfile | null>(null);
   const [ratingSummary, setRatingSummary] = useState<TrustSummary>(NO_REVIEWS_SUMMARY);
@@ -85,6 +92,12 @@ export default function WorkerProfileScreen() {
       }}
       onNavigate={(route) => router.navigate(route as Href)}
       completion={profile?.completion}
+      onDeleteAccount={() => deleteAccount()}
+      legalLinks={{
+        privacy: `${env.legalBaseUrl}/privacy`,
+        terms: `${env.legalBaseUrl}/terms`,
+        contact: `${env.legalBaseUrl}/contact`,
+      }}
     />
   );
 }
