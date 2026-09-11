@@ -9,6 +9,10 @@ const DEFAULT_API_URL =
 
 const apiUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
 
+const legalBaseUrl = apiUrl
+  ? apiUrl.replace(/\/api\/?$/, '')
+  : DEFAULT_API_URL.replace(/\/api\/?$/, '');
+
 const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID?.trim();
 
 if (__DEV__ && !apiUrl) {
@@ -28,4 +32,5 @@ export const env = {
   apiUrl: apiUrl || DEFAULT_API_URL,
   googleWebClientId,
   isDev: __DEV__,
+  legalBaseUrl,
 } as const;
