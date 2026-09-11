@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { DetailHeader } from '@/components/layout/DetailHeader';
 import { Screen } from '@/components/layout/Screen';
 import { Button, ErrorState, ImagePickerField, Input, Text } from '@/components/ui';
+import { IndianStatesField } from '@/components/profiles/IndianStatesField';
 import { ProfileSectionTitle } from '@/components/profiles/ProfileSectionTitle';
 import { spacing } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api/errors';
@@ -131,7 +132,7 @@ export default function EditEmployerProfileScreen() {
       <Input label={translate('profile.phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
       <Input label={translate('profile.address')} value={address} onChangeText={setAddress} />
       <Input label={translate('profile.city')} value={city} onChangeText={setCity} />
-      <Input label={translate('profile.state')} value={state} onChangeText={setState} />
+      <IndianStatesField label={translate('profile.state')} value={state} onChange={setState} />
       <Input label={translate('profile.pincode')} value={pincode} onChangeText={setPincode} keyboardType="numeric" />
     </Screen>
   );
