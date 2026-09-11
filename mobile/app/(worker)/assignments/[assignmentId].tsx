@@ -64,7 +64,7 @@ export default function AssignmentDetailsScreen() {
         const data = await getAssignmentById(assignmentId);
         setAssignment(data.assignment);
         setCompletion(data.completion);
-        if (data.assignment.job.status === 'COMPLETED') {
+        if (data.assignment.job.status === 'COMPLETED' || data.assignment.workerCompleted) {
           try {
             setReviewStatus(await getWorkerReviewStatus(data.assignment.job._id));
           } catch {
@@ -184,7 +184,7 @@ export default function AssignmentDetailsScreen() {
               </Text>
             ) : null}
           </View>
-        ) : job.status === 'COMPLETED' && reviewStatus ? (
+        ) : (job.status === 'COMPLETED' || assignment.workerCompleted) && reviewStatus ? (
           reviewStatus.hasReviewed ? (
             <View style={styles.successBox}>
               <Text variant="headingMd" color="success" align="center">
