@@ -65,7 +65,7 @@ export default function EmployerJobDetailsScreen() {
         const data = await getEmployerJobById(jobId);
         setJob(data.job);
         setCompletion(data.completion);
-        if (data.job.status === 'COMPLETED') {
+        if (data.job.status === 'COMPLETED' || data.completion?.employerCompleted) {
           try {
             const [reviewData] = await Promise.all([
               getEmployerReviewStatus(data.job._id),
@@ -365,7 +365,7 @@ export default function EmployerJobDetailsScreen() {
         </Card>
       ) : null}
 
-      {job.status === 'COMPLETED' && reviewStatus && reviewStatus.workers.length > 0 ? (
+      {(job.status === 'COMPLETED' || completion?.employerCompleted) && reviewStatus && reviewStatus.workers.length > 0 ? (
         <Card style={styles.section}>
           <View style={styles.reviewHeader}>
             <Star size={16} color={colors.semantic.warning} />
