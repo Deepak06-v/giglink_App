@@ -1,76 +1,16 @@
 import { useCallback, useState } from 'react';
-import { Image, RefreshControl, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Building2, Star } from '@/components/icons';
-import { Screen } from '@/components/layout/Screen';
-import { Badge, Button, Card, ErrorState, Skeleton, StatRow, Text } from '@/components/ui';
-import { colors, radius, spacing } from '@/constants/theme';
+
+import { OwnProfileCard } from '@/components/profiles/OwnProfileCard';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { getEmployerProfile } from '@/lib/api/profiles';
 import { getUserReviews } from '@/lib/api/reviews';
-import { translate, type TranslationKey } from '@/lib/i18n';
+import { translate } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
 import type { EmployerProfile as EmployerProfileType, TrustSummary } from '@/types';
 import { employerEditProfileRoute, employerReviewsListRoute } from '@/utils/routing';
 
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.infoRow}>
-      <Text variant="caption" color="muted">
-        {label}
-      </Text>
-      <Text variant="bodyMd" color="primary">
-        {value || '—'}
-      </Text>
-    </View>
-  );
-}
-
-function SectionHeader({ label }: { label: string }) {
-  return (
-    <Text variant="caption" color="muted" style={styles.sectionHeader}>
-      {label.toUpperCase()}
-    </Text>
-  );
-}
-
 const NO_REVIEWS_SUMMARY: TrustSummary = { averageRating: null, totalReviews: 0 };
-
-const MISSING_FIELD_LABELS: Record<string, TranslationKey> = {
-  COMPANY_NAME: 'profile.completion.addCompanyName',
-  COMPANY_LOGO: 'profile.completion.addCompanyLogo',
-  COMPANY_DESCRIPTION: 'profile.completion.addCompanyDescription',
-  PHONE: 'profile.completion.addPhone',
-  ADDRESS: 'profile.completion.addAddress',
-  LOCATION: 'profile.completion.addLocation',
-};
-
-function MissingFieldsList({ missingFields, onEdit }: { missingFields: string[]; onEdit: () => void }) {
-  if (missingFields.length === 0) {
-    return null;
-  }
-  return (
-    <View style={styles.missingListWrap}>
-      <Text variant="bodyMd" color="primary">
-        {translate('profile.completion.missingTitle')}
-      </Text>
-      <View style={styles.missingList}>
-        {missingFields.map((field) => {
-          const label = MISSING_FIELD_LABELS[field] ?? MISSING_FIELD_LABELS.COMPANY_NAME;
-          return (
-            <View key={field} style={styles.missingRow}>
-              <View style={styles.missingDot} />
-              <Text variant="bodyMd" color="secondary" style={styles.missingText}>
-                {translate(label)}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
-      <Button label={translate('profile.editProfile')} variant="secondary" size="sm" onPress={onEdit} style={styles.missingAction} />
-    </View>
-  );
-}
 
 export default function EmployerProfileScreen() {
   const router = useRouter();
@@ -84,11 +24,8 @@ export default function EmployerProfileScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const loadProfile = useCallback(async (mode: 'initial' | 'refresh' | 'focus' = 'initial') => {
-    if (mode === 'initial') {
-      setLoading(true);
-    } else if (mode === 'refresh') {
-      setRefreshing(true);
-    }
+    if (mode === 'initial') setLoading(true);
+    else if (mode === 'refresh') setRefreshing(true);
     setError(null);
 
     try {
@@ -115,187 +52,22 @@ export default function EmployerProfileScreen() {
     }, [loadProfile]),
   );
 
-  if (loading) {
-    return (
-      <Screen scroll contentContainerStyle={styles.skeleton}>
-        <Skeleton width={96} height={96} radiusValue={radius.lg} />
-        <Skeleton width="50%" height={22} />
-        <Skeleton width="30%" height={14} />
-        <Skeleton width="100%" height={180} radiusValue={radius.lg} />
-      </Screen>
-    );
-  }
-
-  if (error) {
-    return (
-      <Screen>
-        <ErrorState message={error} onRetry={() => void loadProfile()} />
-      </Screen>
-    );
-  }
-
-  const companyName = profile?.companyName || user?.name || translate('profile.yourCompany');
-  const completion = profile?.completion;
-
   return (
-    <Screen
-      scroll
-      scrollViewProps={{
-        refreshControl: (
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => void loadProfile('refresh')}
-            tintColor={colors.brand.primary}
-          />
-        ),
+    <OwnProfileCard
+      role="employer"
+      profile={profile}
+      ratingSummary={ratingSummary}
+      loading={loading}
+      refreshing={refreshing}
+      error={error}
+      onRefresh={() => void loadProfile('refresh')}
+      onRetry={() => void loadProfile()}
+      onEditProfile={() => router.push(employerEditProfileRoute())}
+      onLogout={() => void logout()}
+      onViewReviews={() => {
+        if (user?.id) router.push(employerReviewsListRoute(user.id));
       }}
-    >
-      <View style={styles.header}>
-        {profile?.logo ? (
-          <Image source={{ uri: profile.logo }} style={styles.avatar} />
-        ) : (
-          <View style={styles.avatarFallback}>
-            <Building2 size={40} color={colors.surface.card} />
-          </View>
-        )}
-        <Text variant="headingLg" color="primary" align="center">
-          {companyName}
-        </Text>
-        <Badge label={translate('profile.employer')} variant="brand" />
-      </View>
-
-      <SectionHeader label={translate('review.reviews')} />
-      <Card style={styles.infoCard}>
-        <StatRow
-          icon={Star}
-          iconColor={colors.semantic.warning}
-          iconBackground={colors.semanticTint.warning}
-          title={translate('review.reviews')}
-          subtitle={
-            ratingSummary.totalReviews > 0 && ratingSummary.averageRating !== null
-              ? `${ratingSummary.averageRating.toFixed(1)} · ${ratingSummary.totalReviews} ${
-                  ratingSummary.totalReviews === 1 ? 'review' : 'reviews'
-                }`
-              : translate('marketplace.noReviews')
-          }
-          showChevron
-          onPress={() => {
-            if (user?.id) {
-              router.push(employerReviewsListRoute(user.id));
-            }
-          }}
-        />
-      </Card>
-
-      <SectionHeader label={translate('profile.profileInformation')} />
-      <Card style={styles.infoCard}>
-        <InfoRow label={translate('profile.email')} value={user?.email ?? '—'} />
-        <InfoRow label={translate('profile.phone')} value={profile?.phone ?? '—'} />
-        <InfoRow label={translate('profile.address')} value={profile?.address ?? '—'} />
-        <InfoRow label={translate('profile.city')} value={profile?.city ?? '—'} />
-        <InfoRow label={translate('profile.state')} value={profile?.state ?? '—'} />
-        <InfoRow label={translate('profile.pincode')} value={profile?.pincode ?? '—'} />
-      </Card>
-
-      {profile?.companyDescription ? (
-        <SectionHeader label={translate('profile.about')} />
-      ) : null}
-      {profile?.companyDescription ? (
-        <Card style={styles.infoCard}>
-          <Text variant="bodyMd" color="secondary">
-            {profile.companyDescription}
-          </Text>
-        </Card>
-      ) : null}
-
-      {completion ? (
-        <Card style={styles.completionCard}>
-          <Text variant="bodyMd" color="primary">
-            {translate('profile.completion.percentComplete', { percentage: completion.percentage })}
-          </Text>
-          <MissingFieldsList
-            missingFields={completion.missingFields ?? []}
-            onEdit={() => router.push(employerEditProfileRoute())}
-          />
-        </Card>
-      ) : null}
-
-      <View style={styles.actions}>
-        <Button label={translate('profile.editProfile')} onPress={() => router.push(employerEditProfileRoute())} />
-        <Button label={translate('profile.logout')} variant="secondary" onPress={() => void logout()} />
-      </View>
-    </Screen>
+      completion={profile?.completion}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing['2xl'],
-    marginTop: spacing.sm,
-  },
-  avatar: {
-    width: 96,
-    height: 96,
-    borderRadius: radius.lg,
-    marginBottom: spacing.sm,
-  },
-  avatarFallback: {
-    width: 96,
-    height: 96,
-    borderRadius: radius.lg,
-    backgroundColor: colors.brand.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-  sectionHeader: {
-    marginBottom: spacing.md,
-    marginTop: spacing.md,
-    letterSpacing: 0.6,
-  },
-  infoCard: {
-    gap: spacing.md,
-    marginBottom: spacing['2xl'],
-  },
-  infoRow: {
-    gap: spacing.xs,
-  },
-  completionCard: {
-    gap: spacing.sm,
-    marginBottom: spacing['2xl'],
-  },
-  missingListWrap: {
-    gap: spacing.sm,
-  },
-  missingAction: {
-    alignSelf: 'flex-start',
-  },
-  missingList: {
-    gap: spacing.xs,
-  },
-  missingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  missingDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.brand.primary,
-  },
-  missingText: {
-    flex: 1,
-  },
-  actions: {
-    gap: spacing.md,
-    marginBottom: spacing['2xl'],
-  },
-  skeleton: {
-    gap: spacing.lg,
-    marginTop: spacing.lg,
-    alignItems: 'center',
-  },
-});
