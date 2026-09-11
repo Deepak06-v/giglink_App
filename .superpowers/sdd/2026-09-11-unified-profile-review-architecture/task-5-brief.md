@@ -1,3 +1,16 @@
+# Task 5: Refactor Worker Self-Profile to Use OwnProfileCard
+
+## Goal
+
+Replace the worker self-profile tab's custom layout with the shared `OwnProfileCard` component.
+
+## Files
+
+- Modify: `mobile/app/(worker)/(tabs)/profile.tsx`
+
+## Implementation (replace entire file content)
+
+```tsx
 import { useCallback, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 
@@ -87,3 +100,27 @@ export default function WorkerProfileScreen() {
     />
   );
 }
+```
+
+## Verify
+
+Run: `cd C:\dev\giglink\mobile && npx tsc --noEmit`
+Expected: No errors.
+
+## Commit
+
+```
+git add 'mobile/app/(worker)/(tabs)/profile.tsx'
+git commit -m "refactor: worker self-profile uses shared OwnProfileCard"
+```
+
+Note: In PowerShell use quoted paths: `git add 'mobile/app/(worker)/(tabs)/profile.tsx'`. If the parens cause issues, stage with `git add -A` after confirming only this file changed.
+
+## Global Constraints
+
+- Expo SDK 53.0.27, React Native 0.79.6
+- Do not break existing API contracts
+- Use existing components/design tokens
+- No new npm dependencies
+
+## Work from: C:\dev\giglink

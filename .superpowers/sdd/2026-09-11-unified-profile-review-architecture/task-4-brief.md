@@ -1,27 +1,37 @@
+# Task 4: Refactor Employer Self-Profile to Use OwnProfileCard
+
+## Goal
+
+Replace the employer self-profile tab's custom layout with the shared `OwnProfileCard` component.
+
+## Files
+
+- Modify: `mobile/app/(employer)/(tabs)/profile.tsx`
+
+## Implementation (replace entire file content)
+
+```tsx
 import { useCallback, useState } from 'react';
 import { useFocusEffect, useRouter } from 'expo-router';
 
 import { OwnProfileCard } from '@/components/profiles/OwnProfileCard';
-import { getApplications } from '@/lib/api/applications';
-import { getAssignments } from '@/lib/api/assignments';
 import { getApiErrorMessage } from '@/lib/api/errors';
-import { getWorkerProfile } from '@/lib/api/profiles';
+import { getEmployerProfile } from '@/lib/api/profiles';
 import { getUserReviews } from '@/lib/api/reviews';
 import { translate } from '@/lib/i18n';
 import { useAuthStore } from '@/store/authStore';
-import type { TrustSummary, WorkerProfile } from '@/types';
-import { workerEditProfileRoute, workerReviewsListRoute } from '@/utils/routing';
+import type { EmployerProfile as EmployerProfileType, TrustSummary } from '@/types';
+import { employerEditProfileRoute, employerReviewsListRoute } from '@/utils/routing';
 
 const NO_REVIEWS_SUMMARY: TrustSummary = { averageRating: null, totalReviews: 0 };
 
-export default function WorkerProfileScreen() {
+export default function EmployerProfileScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
 
-  const [profile, setProfile] = useState<WorkerProfile | null>(null);
+  const [profile, setProfile] = useState<EmployerProfileType | null>(null);
   const [ratingSummary, setRatingSummary] = useState<TrustSummary>(NO_REVIEWS_SUMMARY);
-  const [stats, setStats] = useState({ applications: 0, assignments: 0, completed: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,26 +43,14 @@ export default function WorkerProfileScreen() {
 
     try {
       const currentUser = useAuthStore.getState().user;
-      const [profileData, applicationsData, assignmentsData, reviewData] = await Promise.all([
-        getWorkerProfile(),
-        getApplications(1, 50),
-        getAssignments(1, 50),
+      const [data, reviewData] = await Promise.all([
+        getEmployerProfile(),
         currentUser?.id
           ? getUserReviews(currentUser.id, 1, 1).catch(() => null)
           : Promise.resolve(null),
       ]);
-
-      const completed = assignmentsData.assignments.filter(
-        (item) => item.status === 'COMPLETED',
-      ).length;
-
-      setProfile(profileData);
+      setProfile(data);
       setRatingSummary(reviewData?.summary ?? NO_REVIEWS_SUMMARY);
-      setStats({
-        applications: applicationsData.pagination.total,
-        assignments: assignmentsData.pagination.total,
-        completed,
-      });
     } catch (err) {
       setError(getApiErrorMessage(err, translate('profile.unableLoadProfile')));
     } finally {
@@ -69,21 +67,44 @@ export default function WorkerProfileScreen() {
 
   return (
     <OwnProfileCard
-      role="worker"
+      role="employer"
       profile={profile}
       ratingSummary={ratingSummary}
-      stats={stats}
       loading={loading}
       refreshing={refreshing}
       error={error}
       onRefresh={() => void loadProfile('refresh')}
       onRetry={() => void loadProfile()}
-      onEditProfile={() => router.push(workerEditProfileRoute())}
+      onEditProfile={() => router.push(employerEditProfileRoute())}
       onLogout={() => void logout()}
       onViewReviews={() => {
-        if (user?.id) router.push(workerReviewsListRoute(user.id));
+        if (user?.id) router.push(employerReviewsListRoute(user.id));
       }}
       completion={profile?.completion}
     />
   );
 }
+```
+
+## Verify
+
+Run: `cd C:\dev\giglink\mobile && npx tsc --noEmit`
+Expected: No errors.
+
+## Commit
+
+```
+git add "mobile/app/(employer)/(tabs)/profile.tsx"
+git commit -m "refactor: employer self-profile uses shared OwnProfileCard"
+```
+
+Note: In PowerShell use quoted paths: `git add 'mobile/app/(employer)/(tabs)/profile.tsx'`. If the parens cause issues, stage with `git add -A` after confirming only this file changed.
+
+## Global Constraints
+
+- Expo SDK 53.0.27, React Native 0.79.6
+- Do not break existing API contracts
+- Use existing components/design tokens
+- No new npm dependencies
+
+## Work from: C:\dev\giglink
