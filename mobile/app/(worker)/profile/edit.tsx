@@ -4,10 +4,11 @@ import { useRouter } from 'expo-router';
 import { DetailHeader } from '@/components/layout/DetailHeader';
 import { Screen } from '@/components/layout/Screen';
 import { Button, ErrorState, ImagePickerField, Input, Text } from '@/components/ui';
+import { ProfileSectionTitle } from '@/components/profiles/ProfileSectionTitle';
 import { colors, spacing } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { getWorkerProfile, updateWorkerProfile } from '@/lib/api/profiles';
-import { translate, type TranslationKey } from '@/lib/i18n';
+import { translate } from '@/lib/i18n';
 import type { WorkerProfile } from '@/types';
 
 const AVAILABILITY_OPTIONS = ['AVAILABLE', 'UNAVAILABLE'] as const;
@@ -15,14 +16,6 @@ const AVAILABILITY_LABEL_KEYS = {
   AVAILABLE: 'profile.availabilityAvailable',
   UNAVAILABLE: 'profile.availabilityUnavailable',
 } as const;
-
-function SectionTitle({ value }: { value: TranslationKey }) {
-  return (
-    <Text variant="label" color="accent">
-      {translate(value)}
-    </Text>
-  );
-}
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -141,17 +134,17 @@ export default function EditProfileScreen() {
     >
       <DetailHeader title={translate('profile.editProfile')} />
 
-      <SectionTitle value="profile.sections.aboutYou" />
+      <ProfileSectionTitle value="profile.sections.aboutYou" />
       <ImagePickerField label={translate('profile.photo')} value={profileImage} type="worker_profile" onChange={setProfileImage} />
       <Input label={translate('profile.bio')} value={bio} onChangeText={setBio} multiline numberOfLines={4} />
 
-      <SectionTitle value="profile.sections.contact" />
+      <ProfileSectionTitle value="profile.sections.contact" />
       <Input label={translate('profile.phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
       <Input label={translate('profile.city')} value={city} onChangeText={setCity} />
       <Input label={translate('profile.state')} value={state} onChangeText={setState} />
       <Input label={translate('profile.pincode')} value={pincode} onChangeText={setPincode} keyboardType="numeric" />
 
-      <SectionTitle value="profile.sections.skillsExperience" />
+      <ProfileSectionTitle value="profile.sections.skillsExperience" />
       <Input label={translate('profile.experience')} value={experience} onChangeText={setExperience} multiline numberOfLines={3} />
       <Input
         label={translate('profile.skillsCommaSeparated')}
@@ -166,7 +159,7 @@ export default function EditProfileScreen() {
         placeholder={translate('profile.languagesPlaceholder')}
       />
 
-      <SectionTitle value="profile.sections.availability" />
+      <ProfileSectionTitle value="profile.sections.availability" />
       <View style={styles.availabilityRow}>
         {AVAILABILITY_OPTIONS.map((option) => {
           const selected = availability === option;

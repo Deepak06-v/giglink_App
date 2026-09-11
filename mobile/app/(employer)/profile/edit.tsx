@@ -4,18 +4,11 @@ import { useRouter } from 'expo-router';
 import { DetailHeader } from '@/components/layout/DetailHeader';
 import { Screen } from '@/components/layout/Screen';
 import { Button, ErrorState, ImagePickerField, Input, Text } from '@/components/ui';
+import { ProfileSectionTitle } from '@/components/profiles/ProfileSectionTitle';
 import { spacing } from '@/constants/theme';
 import { getApiErrorMessage } from '@/lib/api/errors';
 import { getEmployerProfile, updateEmployerProfile } from '@/lib/api/profiles';
-import { translate, type TranslationKey } from '@/lib/i18n';
-
-function SectionTitle({ value }: { value: TranslationKey }) {
-  return (
-    <Text variant="label" color="accent">
-      {translate(value)}
-    </Text>
-  );
-}
+import { translate } from '@/lib/i18n';
 
 export default function EditEmployerProfileScreen() {
   const router = useRouter();
@@ -122,7 +115,7 @@ export default function EditEmployerProfileScreen() {
     >
       <DetailHeader title={translate('profile.editProfile')} />
 
-      <SectionTitle value="profile.about" />
+      <ProfileSectionTitle value="profile.about" />
       <ImagePickerField label={translate('profile.companyLogo')} value={logo} type="employer_logo" onChange={setLogo} />
       <Input label={translate('profile.companyName')} value={companyName} onChangeText={setCompanyName} />
       <Input
@@ -134,7 +127,7 @@ export default function EditEmployerProfileScreen() {
         placeholder={translate('profile.companyDescriptionPlaceholder')}
       />
 
-      <SectionTitle value="profile.sections.contact" />
+      <ProfileSectionTitle value="profile.sections.contact" />
       <Input label={translate('profile.phone')} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
       <Input label={translate('profile.address')} value={address} onChangeText={setAddress} />
       <Input label={translate('profile.city')} value={city} onChangeText={setCity} />
