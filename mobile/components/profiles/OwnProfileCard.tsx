@@ -304,7 +304,7 @@ export function OwnProfileCard({
         </View>
       </View>
 
-      {completionData ? (
+      {completionData && completionPct < 100 ? (
         <Card style={styles.completionCard}>
           <View style={styles.completionHeader}>
             <CompletionRing
