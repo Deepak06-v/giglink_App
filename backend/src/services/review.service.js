@@ -21,8 +21,14 @@ const createEmployerReview = async (employerId, jobId, workerId, rating, comment
     throw error;
   }
 
-  if (job.status !== "COMPLETED") {
-    const error = new Error("Reviews can only be created for completed jobs");
+  if (job.status === "CANCELLED") {
+    const error = new Error("Reviews cannot be created for cancelled jobs");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!job.completion?.employerCompleted) {
+    const error = new Error("Reviews can only be created after the employer confirms job completion");
     error.statusCode = 400;
     throw error;
   }
@@ -86,8 +92,8 @@ const createWorkerReview = async (workerId, jobId, rating, comment) => {
     throw error;
   }
 
-  if (job.status !== "COMPLETED") {
-    const error = new Error("Reviews can only be created for completed jobs");
+  if (job.status === "CANCELLED") {
+    const error = new Error("Reviews cannot be created for cancelled jobs");
     error.statusCode = 400;
     throw error;
   }
@@ -114,6 +120,12 @@ const createWorkerReview = async (workerId, jobId, rating, comment) => {
 
   if (!assignment) {
     const error = new Error("You were not assigned to this job");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!assignment.workerCompleted) {
+    const error = new Error("Reviews can only be created after the worker completes their assignment");
     error.statusCode = 400;
     throw error;
   }

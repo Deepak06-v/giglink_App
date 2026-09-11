@@ -174,33 +174,36 @@ export default function AssignmentDetailsScreen() {
             />
           </>
         ) : completedSuccess || assignment.workerCompleted ? (
-          <View style={styles.successBox}>
-            <Text variant="headingMd" color="success" align="center">
-              {t('assignment.completionSubmitted')}
-            </Text>
-            {completion?.waitingFor === 'employer' ? (
-              <Text variant="bodyMd" color="secondary" align="center">
-                {t('assignment.waitingForEmployer')}
-              </Text>
-            ) : null}
-          </View>
-        ) : (job.status === 'COMPLETED' || assignment.workerCompleted) && reviewStatus ? (
-          reviewStatus.hasReviewed ? (
+          <>
             <View style={styles.successBox}>
               <Text variant="headingMd" color="success" align="center">
-                {t('review.reviewSubmitted')}
+                {t('assignment.completionSubmitted')}
               </Text>
-              <Text variant="bodyMd" color="secondary" align="center">
-                {t('review.reviewSubmittedHint')}
-              </Text>
+              {completion?.waitingFor === 'employer' ? (
+                <Text variant="bodyMd" color="secondary" align="center">
+                  {t('assignment.waitingForEmployer')}
+                </Text>
+              ) : null}
             </View>
-          ) : reviewStatus.canReview ? (
-            <Button
-              label={t('review.rateEmployer')}
-              onPress={() => router.push(workerReviewSubmitRoute(job._id))}
-              fullWidth
-            />
-          ) : undefined
+            {reviewStatus ? (
+              reviewStatus.hasReviewed ? (
+                <View style={styles.successBox}>
+                  <Text variant="headingMd" color="success" align="center">
+                    {t('review.reviewSubmitted')}
+                  </Text>
+                  <Text variant="bodyMd" color="secondary" align="center">
+                    {t('review.reviewSubmittedHint')}
+                  </Text>
+                </View>
+              ) : reviewStatus.canReview ? (
+                <Button
+                  label={t('review.rateEmployer')}
+                  onPress={() => router.push(workerReviewSubmitRoute(job._id))}
+                  fullWidth
+                />
+              ) : null
+            ) : null}
+          </>
         ) : undefined
       }
       contentContainerStyle={styles.content}
