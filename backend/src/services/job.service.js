@@ -633,13 +633,19 @@ const deleteJob = async (jobId, employerId) => {
     throw error;
   }
 
-  const activeAssignments = await Assignment.countDocuments({
+  if (job.status !== "DRAFT") {
+    const error = new Error("Only draft jobs can be deleted");
+    error.statusCode = 409;
+    throw error;
+  }
+
+  const nonCancelledAssignments = await Assignment.countDocuments({
     job: jobId,
-    status: "ACTIVE",
+    status: { $ne: "CANCELLED" },
   });
 
-  if (activeAssignments > 0) {
-    const error = new Error("Cannot delete job with active assignments");
+  if (nonCancelledAssignments > 0) {
+    const error = new Error("Cannot delete a job with assignment history");
     error.statusCode = 409;
     throw error;
   }
