@@ -1,7 +1,3 @@
-import 'expo-router/entry';
-
-import { setupPushyListeners } from '@/lib/notifications/pushy';
-
 /**
  * Custom app entry.
  *
@@ -14,4 +10,8 @@ import { setupPushyListeners } from '@/lib/notifications/pushy';
  * app/App.tsx would become a real "/App" route. The root entry is the same
  * layout the official pushy-demo-expo uses.
  */
+import 'expo-router/entry';
+
+import { setupPushyListeners } from '@/lib/notifications/pushy';
+
 setupPushyListeners();

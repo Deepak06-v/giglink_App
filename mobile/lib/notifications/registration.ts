@@ -18,10 +18,17 @@ function platformForRegistration(): DevicePlatform {
   return 'web';
 }
 
+function maskToken(token: string): string {
+  if (token.length <= 8) return '****';
+  return token.slice(0, 4) + '****' + token.slice(-4);
+}
+
 async function obtainPushyToken(): Promise<string | null> {
   try {
+    console.log('[GigLink] Registering with Pushy...');
     const token = (await Pushy.register()) as string;
     registeredPushyToken = token;
+    console.log('[GigLink] Pushy token obtained:', maskToken(token));
     return token;
   } catch (error) {
     console.warn(
@@ -51,7 +58,10 @@ export async function registerForPushNotifications(): Promise<void> {
   }
 
   try {
-    await registerDeviceToken(token, platformForRegistration(), 'pushy');
+    const platform = platformForRegistration();
+    console.log(`[GigLink] Registering device token with backend (platform=${platform}, provider=pushy)`);
+    await registerDeviceToken(token, platform, 'pushy');
+    console.log('[GigLink] Device token registered successfully');
   } catch (error) {
     console.warn(
       '[GigLink] Failed to register device token with the API:',

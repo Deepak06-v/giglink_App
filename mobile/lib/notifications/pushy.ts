@@ -53,19 +53,24 @@ function stringValue(data: unknown, key: string): string | undefined {
  * ourselves with Pushy.notify() (the canonical RN pattern — no double display).
  */
 async function onPushyNotification(data: string | object): Promise<void> {
+  console.log('[GigLink][Pushy] Headless notification received, type:', typeof data);
+  console.log('[GigLink][Pushy] Data keys:', data && typeof data === 'object' ? Object.keys(data) : 'N/A');
+
   const payload = normalizeNotificationPayload(data);
   if (payload.notificationId && payload.type) {
     useNotificationStore.getState().incrementUnread();
   }
 
   const copy = stringValue(data, 'title');
-  const title = copy ?? 'FixMate';
+  const title = copy ?? 'GigLink';
   const message = stringValue(data, 'message') ?? 'You have a new notification';
 
+  console.log('[GigLink][Pushy] Displaying notification:', title, '-', message);
   Pushy.notify(title, message, data);
 }
 
 function onPushyNotificationClick(data: string | object): void {
+  console.log('[GigLink][Pushy] Notification clicked');
   dispatchTap(normalizeNotificationPayload(data));
 }
 
@@ -78,6 +83,18 @@ export function setupPushyListeners(): void {
     return;
   }
 
+  console.log('[GigLink][Pushy] Setting up Pushy listeners (module scope)');
+
+  // Enable the foreground service so the MQTT connection survives Doze mode
+  // and app standby. This keeps a persistent notification that ensures reliable
+  // push delivery when the app is backgrounded.
+  try {
+    Pushy.toggleForegroundService(true);
+    console.log('[GigLink][Pushy] Foreground service enabled');
+  } catch (e) {
+    console.warn('[GigLink][Pushy] Failed to enable foreground service:', e);
+  }
+
   // Listeners must be registered at module scope, BEFORE Pushy.listen(): the
   // cold-start NotificationClick (replayed from a launch intent) is emitted
   // synchronously by listen() and would be lost otherwise.
@@ -86,4 +103,6 @@ export function setupPushyListeners(): void {
   Pushy.listen();
   // setNotificationIcon must be called AFTER listen() (per the SDK docs).
   Pushy.setNotificationIcon('ic_launcher');
+
+  console.log('[GigLink][Pushy] Listeners registered, Pushy.listen() called');
 }

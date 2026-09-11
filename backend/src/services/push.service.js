@@ -110,6 +110,7 @@ const pushyHttpPost = (apiKey, payload) =>
 export const sendPushyNotification = async (notification, tokens, httpPost = pushyHttpPost) => {
   const recipientTokens = Array.isArray(tokens) ? tokens : [];
   if (recipientTokens.length === 0) {
+    console.log(`[PUSHY] No active devices for recipient, skipping push`);
     return 0;
   }
 
@@ -120,11 +121,17 @@ export const sendPushyNotification = async (notification, tokens, httpPost = pus
   }
 
   const payload = buildPushyPayload(notification, recipientTokens);
-  console.log(`[PUSHY] Sending push to ${recipientTokens.length} device(s)`);
+  const maskedTokens = recipientTokens.map((t) => {
+    if (typeof t === "string" && t.length > 8) return t.slice(0, 4) + "****" + t.slice(-4);
+    return "****";
+  });
+  console.log(`[PUSHY] Sending push to ${recipientTokens.length} device(s): [${maskedTokens.join(", ")}]`);
+  console.log(`[PUSHY] Notification type: ${notification.type}, id: ${notification._id}`);
 
   let response;
   try {
     response = await httpPost(apiKey, payload);
+    console.log(`[PUSHY] API response:`, JSON.stringify(response));
   } catch (error) {
     console.warn(`[PUSHY] Push delivery failed: ${error?.message || error}`);
     return 0;
@@ -138,7 +145,8 @@ export const sendPushyNotification = async (notification, tokens, httpPost = pus
 
   const reported = Number(response?.info?.devices);
   const delivered = Number.isFinite(reported) ? reported : recipientTokens.length;
-  console.log(`[PUSHY] Push delivery succeeded (${delivered} device(s))`);
+  const messageId = response?.info?.id || response?.id || "N/A";
+  console.log(`[PUSHY] Push delivery succeeded (${delivered} device(s), messageId: ${messageId})`);
   return delivered;
 };
 
@@ -149,7 +157,9 @@ export const sendPushyNotification = async (notification, tokens, httpPost = pus
  */
 export const pushNotifications = async (notification, { httpPost } = {}) => {
   try {
+    console.log(`[PUSH] Looking up active devices for user ${notification.recipient}`);
     const devices = await getActiveDevices(notification.recipient);
+    console.log(`[PUSH] Found ${devices.length} active device(s) for recipient`);
     const tokens = devices.map((device) => device.token);
     return await sendPushyNotification(notification, tokens, httpPost);
   } catch (error) {
