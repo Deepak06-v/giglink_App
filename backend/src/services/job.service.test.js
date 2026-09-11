@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, it, mock } from "node:test";
 import assert from "node:assert/strict";
+import mongoose from "mongoose";
 import Job from "../models/Job.js";
 import EmployerProfile from "../models/EmployerProfile.js";
 import WorkerProfile from "../models/WorkerProfile.js";
@@ -12,6 +13,7 @@ import {
   updateJob,
   getJobByIdPublic,
   getPublicJobs,
+  deleteJob,
 } from "./job.service.js";
 
 describe("buildDiscoveryFilter", () => {
@@ -431,6 +433,117 @@ describe("removed schedule-matching is inert", () => {
     // best_match no longer re-ranks by schedule; it behaves like the base path.
     assert.equal(result.pagination.total, 2);
     assert.equal(result.jobs[0].availabilityMatch, undefined);
+  });
+});
+
+describe("getJobByIdPublic completed jobs", () => {
+  beforeEach(() => {
+    mock.restoreAll();
+  });
+
+  it("returns a COMPLETED job to an assigned worker", async () => {
+    const job = {
+      _id: new mongoose.Types.ObjectId(),
+      employer: new mongoose.Types.ObjectId(),
+      title: "Delivery",
+      status: "COMPLETED",
+      category: "delivery",
+      description: "done",
+      workersRequired: 1,
+      compensationType: "FIXED",
+      compensation: { amount: 500 },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    mock.method(Job, "findById", () => ({ lean: async () => ({ ...job }) }));
+    mock.method(Application, "findOne", () => ({ lean: async () => null }));
+    mock.method(
+      Assignment,
+      "findOne",
+      () => ({ lean: async () => ({ worker: new mongoose.Types.ObjectId(), status: "COMPLETED" }) })
+    );
+    mock.method(EmployerProfile, "findOne", () => ({ select: () => ({ lean: async () => null }) }));
+    mock.method(User, "findById", () => ({ select: () => ({ lean: async () => ({ name: "Acme" }) }) }));
+
+    const result = await getJobByIdPublic(job._id.toString(), new mongoose.Types.ObjectId().toString());
+
+    assert.equal(result.status, "COMPLETED");
+  });
+
+  it("throws 404 Job not available for a worker with no relationship", async () => {
+    const job = {
+      _id: new mongoose.Types.ObjectId(),
+      employer: new mongoose.Types.ObjectId(),
+      title: "Delivery",
+      status: "COMPLETED",
+      category: "delivery",
+      description: "done",
+      workersRequired: 1,
+      compensationType: "FIXED",
+      compensation: { amount: 500 },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    mock.method(Job, "findById", () => ({ lean: async () => ({ ...job }) }));
+    mock.method(Application, "findOne", () => ({ lean: async () => null }));
+    mock.method(Assignment, "findOne", () => ({ lean: async () => null }));
+    mock.method(EmployerProfile, "findOne", () => ({ select: () => ({ lean: async () => null }) }));
+    mock.method(User, "findById", () => ({ select: () => ({ lean: async () => null }) }));
+
+    await assert.rejects(
+      () => getJobByIdPublic(job._id.toString(), new mongoose.Types.ObjectId().toString()),
+      (err) => err.statusCode === 404 && err.message === "Job not available"
+    );
+  });
+});
+
+describe("deleteJob", () => {
+  beforeEach(() => {
+    mock.restoreAll();
+  });
+
+  it("deletes a DRAFT job with no assignment history", async () => {
+    const job = {
+      _id: new mongoose.Types.ObjectId(),
+      employer: new mongoose.Types.ObjectId(),
+      status: "DRAFT",
+    };
+    mock.method(Job, "findOne", async () => job);
+    mock.method(Assignment, "countDocuments", async () => 0);
+    mock.method(Job, "findByIdAndDelete", async () => job);
+
+    const result = await deleteJob(job._id.toString(), job.employer.toString());
+
+    assert.equal(result.message, "Job deleted successfully");
+  });
+
+  it("rejects deleting a COMPLETED job", async () => {
+    const job = {
+      _id: new mongoose.Types.ObjectId(),
+      employer: new mongoose.Types.ObjectId(),
+      status: "COMPLETED",
+    };
+    mock.method(Job, "findOne", async () => job);
+
+    await assert.rejects(
+      () => deleteJob(job._id.toString(), job.employer.toString()),
+      (err) => err.statusCode === 409 && err.message === "Only draft jobs can be deleted"
+    );
+  });
+
+  it("rejects deleting a job with completed assignment history", async () => {
+    const job = {
+      _id: new mongoose.Types.ObjectId(),
+      employer: new mongoose.Types.ObjectId(),
+      status: "DRAFT",
+    };
+    mock.method(Job, "findOne", async () => job);
+    mock.method(Assignment, "countDocuments", async () => 1);
+
+    await assert.rejects(
+      () => deleteJob(job._id.toString(), job.employer.toString()),
+      (err) => err.statusCode === 409 && err.message === "Cannot delete a job with assignment history"
+    );
   });
 });
 
