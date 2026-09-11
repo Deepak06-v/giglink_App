@@ -179,6 +179,20 @@ const getUserReviews = async (userId, page = 1, limit = 20) => {
 
   const enrichedReviews = await Promise.all(
     reviews.map(async (review) => {
+      if (!review.reviewer) {
+        return {
+          ...review,
+          reviewer: { id: null, name: "Deleted User" },
+          job: review.job
+            ? {
+                id: review.job._id,
+                title: review.job.title,
+                category: review.job.category,
+              }
+            : null,
+        };
+      }
+
       let reviewerInfo = {
         id: review.reviewer._id,
         name: review.reviewer.name,
