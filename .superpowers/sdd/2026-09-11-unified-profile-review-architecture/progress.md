@@ -13,6 +13,10 @@
 ## Task Completions
 
 Task 1-2: complete (commits 128107b..517832b, review clean)
+Task 3: complete (commit 3923df8, review clean)
+Task 4-5: complete (commits 5c4649b, dd25983, + cefd74e fix for onNavigate wiring found in review)
+Task 6-7: complete (commits bbeee4a, 80c6db7, + 5533d65 fix for submission gates + worker footer shadowing found in review)
+Task 8: complete — backend 200/200 tests pass, mobile tsc clean, no eslint config in repo (step skipped)
 
 ## Rulings
 
