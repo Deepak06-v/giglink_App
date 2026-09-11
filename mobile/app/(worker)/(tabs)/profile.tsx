@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
 
 import { OwnProfileCard } from '@/components/profiles/OwnProfileCard';
 import { getApplications } from '@/lib/api/applications';
@@ -83,6 +83,7 @@ export default function WorkerProfileScreen() {
       onViewReviews={() => {
         if (user?.id) router.push(workerReviewsListRoute(user.id));
       }}
+      onNavigate={(route) => router.navigate(route as Href)}
       completion={profile?.completion}
     />
   );
