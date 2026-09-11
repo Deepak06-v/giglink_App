@@ -1,3 +1,4 @@
+import { deleteAccount } from "../services/account.service.js";
 import { signup, login, getCurrentUser } from "../services/auth.service.js";
 
 const handleError = (res, error) => {
@@ -56,4 +57,16 @@ export const logoutController = async (req, res) => {
     success: true,
     message: "Logged out successfully",
   });
+};
+
+export const deleteAccountController = async (req, res) => {
+  try {
+    const result = await deleteAccount(req.user.userId);
+    return res.json({
+      success: true,
+      message: result.message,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
 };

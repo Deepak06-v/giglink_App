@@ -1,5 +1,5 @@
 import express from "express";
-import { signupController, loginController, getMeController, logoutController } from "../controllers/auth.controller.js";
+import { signupController, loginController, getMeController, logoutController, deleteAccountController } from "../controllers/auth.controller.js";
 import { sendOtpController, verifyOtpController } from "../controllers/phone.controller.js";
 import { googleAuthController } from "../controllers/google.controller.js";
 import { signupValidation, loginValidation, sendOtpValidation, verifyOtpValidation, googleAuthValidation } from "../validators/auth.validator.js";
@@ -12,6 +12,7 @@ router.post("/login", loginValidation, loginController);
 router.post("/google", googleAuthValidation, googleAuthController);
 router.get("/me", authenticate, getMeController);
 router.post("/logout", authenticate, logoutController);
+router.delete("/account", authenticate, deleteAccountController);
 router.post("/phone/send-otp", sendOtpValidation, sendOtpController);
 router.post("/phone/verify-otp", verifyOtpValidation, verifyOtpController);
 
