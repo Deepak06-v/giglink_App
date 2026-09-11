@@ -99,6 +99,11 @@ const getCurrentUser = async (userId) => {
     error.statusCode = 404;
     throw error;
   }
+  if (user.deletedAt) {
+    const error = new Error("User not found");
+    error.statusCode = 404;
+    throw error;
+  }
 
   return {
     id: user._id.toString(),
