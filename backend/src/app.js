@@ -20,6 +20,7 @@ import deviceRoutes from "./routes/device.routes.js";
 import locationRoutes from "./routes/location.routes.js";
 import uploadRoutes from "./routes/upload.routes.js";
 import marketplaceRoutes from "./routes/marketplace.routes.js";
+import legalRoutes from "./routes/legal.routes.js";
 
 import { errorHandler, notFound } from "./middleware/error.middleware.js";
 import { normalizePhone } from "./utils/phone.js";
@@ -264,6 +265,8 @@ app.use("/api", userRoutes);
 // ======================================================
 // Error Handling
 // ======================================================
+
+app.use(legalRoutes);
 
 app.use(notFound);
 
