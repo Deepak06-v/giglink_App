@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { getJobById } from '@/lib/api/jobs';
 import { applyForJob } from '@/lib/api/applications';
+import { getApiErrorMessage, getProfileCompletionInfo } from '@/lib/api/errors';
+import { getWorkerProfile } from '@/lib/api/profiles';
 import type { Job } from '@/types/jobs';
 import { formatCurrency, formatJobDate, formatJobTime } from '@/utils/formatJob';
 import { Button } from '@/components/ui/Button';
@@ -44,6 +46,10 @@ export const JobDetailView: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasAppliedLocally, setHasAppliedLocally] = useState(false);
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
+  const [completionInfo, setCompletionInfo] = useState<{
+    percentage?: number;
+    missingFields?: string[];
+  } | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -54,12 +60,33 @@ export const JobDetailView: React.FC = () => {
         if (data.hasApplied) setHasAppliedLocally(true);
       })
       .catch((err) => {
-        setError(err.message || 'Failed to load job details');
+        setError(getApiErrorMessage(err, 'Failed to load job details'));
       })
       .finally(() => {
         setIsLoading(false);
       });
   }, [id]);
+
+  // Optional background fetch of worker completeness info
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'worker') return;
+    let active = true;
+    getWorkerProfile()
+      .then((profile: any) => {
+        if (active && profile?.completion) {
+          setCompletionInfo({
+            percentage: profile.completion.percentage,
+            missingFields: profile.completion.missingFields,
+          });
+        }
+      })
+      .catch(() => {
+        // Optional hint fetch failure never blocks browsing
+      });
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated, user?.role]);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -106,8 +133,8 @@ export const JobDetailView: React.FC = () => {
       return;
     }
 
-    // Check if worker profile is complete enough (if available)
-    if (user?.profileCompletion && user.profileCompletion < 50) {
+    // Check if worker profile is incomplete
+    if (completionInfo && completionInfo.percentage !== undefined && completionInfo.percentage < 100) {
       setShowIncompleteModal(true);
       return;
     }
@@ -127,14 +154,19 @@ export const JobDetailView: React.FC = () => {
         description: 'The employer will review your profile shortly.',
         type: 'success',
       });
-    } catch (err: any) {
-      if (err.isProfileIncomplete || err.code === 'PROFILE_INCOMPLETE') {
+    } catch (err: unknown) {
+      const info = getProfileCompletionInfo(err);
+      if (info) {
         setIsApplySheetOpen(false);
+        setCompletionInfo({
+          percentage: info.percentage,
+          missingFields: info.missingFields,
+        });
         setShowIncompleteModal(true);
       } else {
         showToast({
           title: 'Could Not Apply',
-          description: err.message || 'Please check your connection and try again.',
+          description: getApiErrorMessage(err, 'Unable to submit application. Please check your connection and try again.'),
           type: 'error',
         });
       }
@@ -172,8 +204,8 @@ export const JobDetailView: React.FC = () => {
   const employerName = empObj?.name || empObj?.companyName || (job as any).employerName || 'Verified Employer';
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5 pb-28 md:pb-12">
-      {/* Top Bar */}
+    <div className="max-w-2xl mx-auto space-y-5 pb-48 md:pb-16">
+      {/* Top Header */}
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
@@ -183,139 +215,203 @@ export const JobDetailView: React.FC = () => {
           <span>Back</span>
         </button>
 
-        <button
-          onClick={handleShare}
-          className="p-2.5 rounded-2xl bg-white border border-border text-text-secondary hover:text-primary transition-colors shadow-xs"
-          aria-label="Share"
-        >
-          <Share2 className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <Badge variant={job.status === 'OPEN' ? 'success' : 'neutral'}>
+            {job.status}
+          </Badge>
+          <button
+            onClick={handleShare}
+            className="p-2 rounded-2xl bg-white border border-border text-text-secondary hover:text-primary transition-colors shadow-xs"
+            aria-label="Share Job"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      {/* Hero Header Card */}
-      <Card className="space-y-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1.5">
-            <Badge variant="primary" size="md">
-              {job.category.replace(/_/g, ' ')}
-            </Badge>
-            <h1 className="text-2xl sm:text-3xl font-black text-text-primary tracking-tight">
+      {/* Main Hero Card */}
+      <Card>
+        <div className="space-y-4">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider mb-1">
+              <span>{job.category.replace(/_/g, ' ')}</span>
+              <span>•</span>
+              <span>{job.compensation.type}</span>
+            </div>
+            <h1 className="text-2xl font-black text-text-primary tracking-tight leading-tight">
               {job.title}
             </h1>
           </div>
-          <Badge
-            variant={
-              job.status === 'OPEN'
-                ? 'success'
-                : job.status === 'COMPLETED'
-                ? 'neutral'
-                : 'warning'
-            }
-          >
-            {job.status}
-          </Badge>
-        </div>
 
-        {/* Compensation Box */}
-        <div className="flex items-baseline justify-between p-4 rounded-2xl bg-primary/5 border border-primary/15">
-          <div>
-            <span className="text-xs font-bold text-primary uppercase tracking-wider block">
-              Offered Compensation
-            </span>
-            <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-3xl font-black text-primary tracking-tight">
-                {formatCurrency(job.compensation.amount)}
-              </span>
-              <span className="text-xs font-semibold text-text-secondary">
-                / {job.compensation.type === 'hourly' ? 'hour' : 'task'}
-              </span>
+          <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-text-secondary pt-1 border-t border-border/60">
+            <div className="flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-primary" />
+              <span>{formatJobDate(job.schedule.startDate)}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-primary" />
+              <span>{formatJobTime(job.schedule.startTime)} - {formatJobTime(job.schedule.endTime)}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <MapPin className="w-4 h-4 text-primary" />
+              <span>{job.location.city}, {job.location.state}</span>
             </div>
           </div>
-          <span className="text-xs font-medium text-text-muted bg-white px-2.5 py-1 rounded-full border border-border">
-            {job.compensation.type === 'hourly' ? 'Hourly Rate' : 'Fixed Lump-sum'}
+        </div>
+      </Card>
+
+      {/* Compensation & Workers */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex items-baseline justify-between p-4 rounded-2xl bg-primary/5 border border-primary/15">
+          <div>
+            <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider block">
+              Pay Rate
+            </span>
+            <div className="text-xl font-black text-primary mt-0.5">
+              {formatCurrency(job.compensation.amount)}
+            </div>
+          </div>
+          <span className="text-xs font-semibold text-text-secondary">
+            /{job.compensation.type.toLowerCase()}
           </span>
         </div>
 
-        {/* Time & Date */}
-        <div className="grid grid-cols-2 gap-3 pt-2">
+        <div className="p-4 rounded-2xl bg-white border border-border shadow-xs flex flex-col justify-between">
+          <span className="text-[11px] font-bold text-text-muted uppercase tracking-wider">
+            Workers Needed
+          </span>
+          <div className="text-xl font-black text-text-primary mt-0.5">
+            {job.workersRequired} {job.workersRequired === 1 ? 'Worker' : 'Workers'}
+          </div>
+        </div>
+      </div>
+
+      {/* Description */}
+      <Card title="Job Description">
+        <p className="text-sm text-text-primary leading-relaxed whitespace-pre-line">
+          {job.description}
+        </p>
+      </Card>
+
+      {/* Schedule Summary */}
+      <Card title="Shift & Working Hours">
+        <div className="space-y-3">
           <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-bg-primary border border-border">
             <Calendar className="w-5 h-5 text-primary shrink-0" />
-            <div className="min-w-0">
-              <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider block">
-                Date
+            <div>
+              <span className="text-[11px] font-semibold text-text-muted uppercase block">
+                Shift Schedule
               </span>
-              <span className="text-xs font-bold text-text-primary truncate block">
-                {formatJobDate(job.schedule.date)}
+              <span className="text-xs font-bold text-text-primary">
+                {formatJobDate(job.schedule.startDate)}
+                {job.schedule.endDate && ` to ${formatJobDate(job.schedule.endDate)}`}
               </span>
             </div>
           </div>
 
           <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-bg-primary border border-border">
             <Clock className="w-5 h-5 text-primary shrink-0" />
-            <div className="min-w-0">
-              <span className="text-[10px] uppercase font-bold text-text-muted tracking-wider block">
-                Schedule
+            <div>
+              <span className="text-[11px] font-semibold text-text-muted uppercase block">
+                Hours Per Day
               </span>
-              <span className="text-xs font-bold text-text-primary truncate block">
-                {formatJobTime(job.schedule.startTime)} - {formatJobTime(job.schedule.endTime)}
+              <span className="text-xs font-bold text-text-primary">
+                {job.schedule.durationHours || job.duration?.hoursPerDay ? `${job.schedule.durationHours || job.duration?.hoursPerDay} hours` : 'Full Shift'} ({formatJobTime(job.schedule.startTime)} - {formatJobTime(job.schedule.endTime)})
               </span>
             </div>
           </div>
         </div>
       </Card>
 
-      {/* Description */}
-      <Card title="Gig Description">
-        <p className="text-sm text-text-secondary whitespace-pre-line leading-relaxed">
-          {job.description}
-        </p>
+      {/* Requirements & Skills */}
+      {Boolean(job.requirements?.skills?.length || job.requirements?.experience || job.requirements?.dressCode || job.requirements?.languages?.length) && (
+        <Card title="Skills & Requirements">
+          <div className="space-y-4">
+            {job.requirements?.skills && job.requirements.skills.length > 0 && (
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-text-muted block mb-2">
+                  Required Skills
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {job.requirements.skills.map((skill: string) => (
+                    <span
+                      key={skill}
+                      className="px-3 py-1.5 rounded-xl bg-bg-secondary text-text-primary text-xs font-semibold border border-border"
+                    >
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {job.requirements?.skills && job.requirements.skills.length > 0 && (
-          <div className="mt-5 pt-4 border-t border-border">
-            <span className="text-xs font-bold uppercase tracking-wider text-text-muted block mb-2.5">
-              Key Requirements
-            </span>
-            <ul className="space-y-2">
-              {job.requirements.skills.map((req, idx) => (
-                <li key={idx} className="flex items-start gap-2 text-xs font-medium text-text-primary">
-                  <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                  <span>{req}</span>
-                </li>
-              ))}
-            </ul>
+            {job.requirements?.languages && job.requirements.languages.length > 0 && (
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-text-muted block mb-2">
+                  Languages
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {job.requirements.languages.map((lang: string) => (
+                    <span
+                      key={lang}
+                      className="px-3 py-1.5 rounded-xl bg-bg-secondary text-text-primary text-xs font-semibold border border-border"
+                    >
+                      {lang}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(job.requirements?.experience || job.requirements?.dressCode) && (
+              <div className="space-y-2 pt-2 border-t border-border">
+                {job.requirements.experience && (
+                  <div className="text-xs text-text-secondary">
+                    <strong className="text-text-primary">Experience:</strong> {job.requirements.experience}
+                  </div>
+                )}
+                {job.requirements.dressCode && (
+                  <div className="text-xs text-text-secondary">
+                    <strong className="text-text-primary">Dress Code:</strong> {job.requirements.dressCode}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        )}
-      </Card>
+        </Card>
+      )}
 
-      {/* Location Card with Leaflet Map Preview */}
-      <Card title="Location">
-        <div className="flex items-start gap-2.5 mb-3 text-text-secondary">
-          <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-          <div className="text-xs">
-            <p className="font-semibold text-text-primary">{job.location.address}</p>
-            <p className="text-text-muted mt-0.5">
-              {job.location.city}, {job.location.state} {job.location.pincode}
-            </p>
+      {/* Location Map */}
+      <Card title="Work Location">
+        <div className="space-y-3">
+          <div className="flex items-start gap-2 text-xs font-medium text-text-secondary">
+            <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-text-primary">{job.location.address}</p>
+              <p>{job.location.city}, {job.location.state} — {job.location.pincode}</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl overflow-hidden border border-border">
+            <JobMapPreview
+              latitude={job.location.coordinates?.latitude || 12.9716}
+              longitude={job.location.coordinates?.longitude || 77.5946}
+              title={job.title}
+              address={job.location.address}
+              height={180}
+            />
           </div>
         </div>
-
-        <JobMapPreview
-          latitude={job.location.coordinates?.latitude || 12.9716}
-          longitude={job.location.coordinates?.longitude || 77.5946}
-          title={job.title}
-          address={job.location.address}
-          height="220px"
-        />
       </Card>
 
-      {/* Employer Info Card */}
+      {/* Employer Info */}
       <Card title="Posted By">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <ProfileAvatar name={employerName} size="md" />
             <div>
               <h4 className="text-sm font-bold text-text-primary">{employerName}</h4>
-              <p className="text-xs text-text-muted flex items-center gap-1 mt-0.5">
+              <p className="text-xs font-medium text-text-muted flex items-center gap-1 mt-0.5">
                 <Building className="w-3.5 h-3.5" />
                 <span>FixMate Verified Employer</span>
               </p>
@@ -333,8 +429,8 @@ export const JobDetailView: React.FC = () => {
         </div>
       </Card>
 
-      {/* Bottom Sticky Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-white/90 backdrop-blur-md border-t border-border shadow-lg">
+      {/* Bottom Sticky Action Bar — Positioned above mobile bottom tab bar */}
+      <div className="fixed bottom-[calc(56px+var(--sab))] md:bottom-0 left-0 right-0 z-30 p-3.5 sm:p-4 bg-white/95 backdrop-blur-md border-t border-border shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <div className="min-w-0 hidden sm:block">
             <span className="text-[10px] uppercase font-bold text-text-muted block">Compensation</span>
@@ -424,6 +520,8 @@ export const JobDetailView: React.FC = () => {
       <ProfileIncompleteModal
         isOpen={showIncompleteModal}
         onClose={() => setShowIncompleteModal(false)}
+        completionPercentage={completionInfo?.percentage ?? 50}
+        missingFields={completionInfo?.missingFields}
         title="Profile Incomplete"
         description="To submit applications, employers require verified profile details including your name, contact phone, and key skills."
       />

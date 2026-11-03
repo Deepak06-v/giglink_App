@@ -178,3 +178,31 @@ export const getJobCompletionStatusController = async (req, res) => {
     return handleError(res, error);
   }
 };
+
+export const publishJobController = async (req, res) => {
+  try {
+    const employerId = req.user.userId;
+    const job = await updateJob(req.params.jobId, employerId, { status: "OPEN" });
+    return res.json({
+      success: true,
+      message: "Job published successfully",
+      data: { job },
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+export const cancelJobController = async (req, res) => {
+  try {
+    const employerId = req.user.userId;
+    const job = await updateJob(req.params.jobId, employerId, { status: "CANCELLED" });
+    return res.json({
+      success: true,
+      message: "Job cancelled successfully",
+      data: { job },
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+};

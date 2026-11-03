@@ -133,6 +133,7 @@ export const WorkerEditProfileView: React.FC = () => {
         <Card title="Profile Photo">
           <ImagePickerField
             label="Upload photo"
+            assetType="photo"
             value={profileImage}
             onChange={(url) => setProfileImage(url)}
           />

@@ -116,17 +116,32 @@ export async function updateJob(jobId: string, data: Partial<Job>): Promise<Job>
 }
 
 export async function publishJob(jobId: string): Promise<Job> {
-  const response = await apiClient.patch<ApiSuccessResponse<{ job: Job }>>(
-    `/jobs/employer/jobs/${jobId}/publish`,
-  );
-  return response.data.data.job;
+  try {
+    const response = await apiClient.patch<ApiSuccessResponse<{ job: Job }>>(
+      `/jobs/employer/jobs/${jobId}/publish`,
+    );
+    return response.data.data.job;
+  } catch (error: any) {
+    // If /publish route is not found (404) or fails, fallback to direct status update
+    if (error?.response?.status === 404) {
+      return updateJob(jobId, { status: 'OPEN' });
+    }
+    throw error;
+  }
 }
 
 export async function cancelJob(jobId: string): Promise<Job> {
-  const response = await apiClient.patch<ApiSuccessResponse<{ job: Job }>>(
-    `/jobs/employer/jobs/${jobId}/cancel`,
-  );
-  return response.data.data.job;
+  try {
+    const response = await apiClient.patch<ApiSuccessResponse<{ job: Job }>>(
+      `/jobs/employer/jobs/${jobId}/cancel`,
+    );
+    return response.data.data.job;
+  } catch (error: any) {
+    if (error?.response?.status === 404) {
+      return updateJob(jobId, { status: 'CANCELLED' });
+    }
+    throw error;
+  }
 }
 
 export async function deleteJob(jobId: string): Promise<void> {

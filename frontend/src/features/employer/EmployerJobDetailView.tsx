@@ -33,6 +33,7 @@ import { JobMapPreview } from '@/components/maps/JobMapPreview';
 import { EmployerApplicationCard } from '@/components/cards/EmployerApplicationCard';
 import { ProfileIncompleteModal } from '@/components/profiles/ProfileIncompleteModal';
 import { useToast } from '@/components/ui/Toast';
+import { getApiErrorMessage, getProfileCompletionInfo } from '@/lib/api/errors';
 
 export const EmployerJobDetailView: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -53,6 +54,7 @@ export const EmployerJobDetailView: React.FC = () => {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
+  const [completionInfo, setCompletionInfo] = useState<{ percentage?: number; missingFields?: string[] } | null>(null);
 
   const loadData = async () => {
     if (!id) return;
@@ -115,7 +117,7 @@ export const EmployerJobDetailView: React.FC = () => {
     } catch (err: any) {
       showToast({
         title: 'Cancel Failed',
-        description: err.message || 'Could not cancel job.',
+        description: getApiErrorMessage(err, 'Could not cancel job.'),
         type: 'error',
       });
     } finally {
@@ -138,7 +140,7 @@ export const EmployerJobDetailView: React.FC = () => {
     } catch (err: any) {
       showToast({
         title: 'Completion Failed',
-        description: err.message || 'Could not complete job.',
+        description: getApiErrorMessage(err, 'Could not complete job.'),
         type: 'error',
       });
     } finally {
@@ -161,7 +163,7 @@ export const EmployerJobDetailView: React.FC = () => {
     } catch (err: any) {
       showToast({
         title: 'Delete Failed',
-        description: err.message || 'Could not delete job.',
+        description: getApiErrorMessage(err, 'Could not delete job.'),
         type: 'error',
       });
     } finally {
@@ -326,7 +328,7 @@ export const EmployerJobDetailView: React.FC = () => {
       </Card>
 
       {/* Sticky Bottom Actions */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-white/90 backdrop-blur-md border-t border-border shadow-lg">
+      <div className="fixed bottom-[calc(56px+var(--sab))] md:bottom-0 left-0 right-0 z-30 p-4 bg-white/95 backdrop-blur-md border-t border-border shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           {job.status === 'DRAFT' && (
             <>

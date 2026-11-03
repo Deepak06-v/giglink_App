@@ -107,7 +107,7 @@ export const WorkerAssignmentDetailView: React.FC = () => {
     Boolean(completion?.completion?.isCompleted || (completion as any)?.workerCompleted);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5 pb-28 md:pb-12">
+    <div className="max-w-2xl mx-auto space-y-5 pb-48 md:pb-16">
       {/* Header */}
       <div className="flex items-center justify-between">
         <button
@@ -262,7 +262,7 @@ export const WorkerAssignmentDetailView: React.FC = () => {
       </Card>
 
       {/* Sticky Action Footer */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 p-4 bg-white/90 backdrop-blur-md border-t border-border shadow-lg">
+      <div className="fixed bottom-[calc(56px+var(--sab))] md:bottom-0 left-0 right-0 z-30 p-4 bg-white/95 backdrop-blur-md border-t border-border shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           {!isCompleted ? (
             <Button

@@ -110,6 +110,7 @@ export const EmployerEditProfileView: React.FC = () => {
         <Card title="Organization Logo">
           <ImagePickerField
             label="Upload company logo"
+            assetType="employer_logo"
             value={logo}
             onChange={(url) => setLogo(url)}
           />

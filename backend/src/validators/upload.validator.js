@@ -5,7 +5,7 @@ const validate = (req, res, next) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({
       success: false,
-      message: "Validation failed",
+      message: "The type must be employer_logo or photo",
       errors: errors.array(),
     });
   }
@@ -14,8 +14,8 @@ const validate = (req, res, next) => {
 
 const uploadSignatureValidation = [
   body("type")
-    .isIn(["worker_profile", "employer_logo"])
-    .withMessage("Type must be worker_profile or employer_logo"),
+    .isIn(["worker_profile", "photo", "employer_logo"])
+    .withMessage("The type must be employer_logo or photo"),
   validate,
 ];
 

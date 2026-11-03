@@ -61,7 +61,7 @@ export const Button: React.FC<ButtonProps> = ({
     accent:
       'bg-[#FF6B35] hover:bg-[#E85D2A] text-white shadow-[0_2px_8px_rgba(255,107,53,0.28)]',
     outline:
-      'bg-transparent hover:bg-bg-secondary text-text-primary border border-border',
+      'bg-white hover:bg-[#F2F3F8] text-[#191B23] border border-[#D8DAE3] shadow-xs active:bg-[#ECEEF3]',
     ghost:
       'bg-transparent hover:bg-[#F2F3F8] text-[#5A5F6E] active:bg-[#ECEEF3]',
   };

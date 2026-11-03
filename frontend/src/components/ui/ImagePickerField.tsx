@@ -16,7 +16,7 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
   label,
   value,
   onChange,
-  assetType = 'profileImage',
+  assetType = 'photo',
   className,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -25,13 +25,28 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || uploading) return;
 
     setError(null);
+
+    // Client-side quick validation before network request
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Please select a valid image file (JPEG, PNG, or WebP).');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image is too large. Maximum file size is 5 MB.');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
     setUploading(true);
 
     try {
-      const url = await uploadImage(assetType as UploadAssetType, file);
+      const url = await uploadImage(assetType, file);
       onChange(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
@@ -48,6 +63,9 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
     onChange('');
     setError(null);
   };
+
+  const isCompanyLogo = assetType === 'employer_logo';
+  const noun = isCompanyLogo ? 'Company Logo' : 'Photo';
 
   return (
     <div className={cn('flex flex-col gap-2 text-left', className)}>
@@ -92,7 +110,7 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
             className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-[#6C5CE7] hover:text-[#5A4BD1] disabled:opacity-50"
           >
             <Upload className="w-4 h-4" />
-            {value ? 'Change Photo' : 'Upload Photo'}
+            {value ? `Change ${noun}` : `Upload ${noun}`}
           </button>
 
           {value && (
@@ -103,7 +121,7 @@ export const ImagePickerField: React.FC<ImagePickerFieldProps> = ({
               className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#E5484D] hover:text-[#D43F44] disabled:opacity-50"
             >
               <Trash2 className="w-3.5 h-3.5" />
-              Remove Photo
+              Remove {noun}
             </button>
           )}
 

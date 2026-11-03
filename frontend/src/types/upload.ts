@@ -1,4 +1,4 @@
-export type UploadAssetType = 'worker_profile' | 'employer_logo';
+export type UploadAssetType = 'photo' | 'worker_profile' | 'employer_logo';
 
 export interface UploadAuthorization {
   assetType: UploadAssetType;
@@ -9,10 +9,10 @@ export interface UploadAuthorization {
   publicId: string;
   folder: string;
   field: string;
-  transformation: string;
+  transformation?: string;
   label: string;
   aspectRatio: string;
-  resourceType: 'image';
+  resourceType: string;
   allowedFormats: string[];
   maxBytes: number;
 }

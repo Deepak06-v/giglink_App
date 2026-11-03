@@ -20,6 +20,7 @@ import { LocationPicker } from '@/components/maps/LocationPicker';
 import { ProfileIncompleteModal } from '@/components/profiles/ProfileIncompleteModal';
 import { useToast } from '@/components/ui/Toast';
 import { useLanguageStore } from '@/stores/languageStore';
+import { getApiErrorMessage, getProfileCompletionInfo } from '@/lib/api/errors';
 
 const STEP_TITLES = ['Basic Info', 'Schedule', 'Pay', 'Requirements', 'Location'];
 
@@ -37,6 +38,7 @@ export const EmployerCreateJobView: React.FC = () => {
   const [stepErrors, setStepErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
+  const [completionInfo, setCompletionInfo] = useState<{ percentage?: number; missingFields?: string[] } | null>(null);
 
   const updateField = (field: keyof JobFormState, val: string) => {
     setForm((prev) => ({ ...prev, [field]: val }));

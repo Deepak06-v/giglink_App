@@ -50,6 +50,17 @@ describe("buildUploadAuthorization (role/type authorization)", () => {
     assert.match(result.publicId, /^giglink\/users\/w1\/profile\/avatar$/);
   });
 
+  it("allows a worker to build photo authorization", () => {
+    const result = buildUploadAuthorization({
+      type: "photo",
+      userId: "w1",
+      role: "worker",
+    });
+    assert.equal(result.assetType, "photo");
+    assert.equal(result.field, "profileImage");
+    assert.match(result.publicId, /^giglink\/users\/w1\/profile\/avatar$/);
+  });
+
   it("allows an employer to build employer_logo authorization", () => {
     const result = buildUploadAuthorization({
       type: "employer_logo",

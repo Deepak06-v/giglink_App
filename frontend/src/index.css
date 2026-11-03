@@ -1,5 +1,30 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #6C5CE7;
+  --color-primary-hover: #5A4BD1;
+  --color-primary-soft: #EDEBFC;
+  
+  --color-accent: #FF6B35;
+  --color-accent-soft: #FFEDE4;
+
+  --color-bg-primary: #F6F7FB;
+  --color-bg-secondary: #EEF0F6;
+  --color-surface-card: #FFFFFF;
+
+  --color-text-primary: #191B23;
+  --color-text-secondary: #5A5F6E;
+  --color-text-muted: #9BA1AE;
+  --color-text-on-brand: #FFFFFF;
+
+  --color-border: #E9EAF0;
+  --color-border-strong: #D8DAE3;
+
+  --color-success: #12B76A;
+  --color-warning: #F79009;
+  --color-error: #E5484D;
+}
+
 @layer base {
   :root {
     --brand-primary: #6C5CE7;
@@ -48,22 +73,29 @@
   }
 }
 
-/* iOS Glassmorphism Effects */
+/* Solid & High-Contrast Interactive Feedback (replaces problematic glassmorphism on active/selected items) */
+.solid-selected {
+  background-color: #6C5CE7 !important;
+  color: #FFFFFF !important;
+  border-color: #6C5CE7 !important;
+}
+
+/* iOS Glassmorphism Effects (Navigation only) */
 .ios-glass {
-  background-color: rgba(255, 255, 255, 0.85);
+  background-color: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 
 .ios-glass-nav {
-  background-color: rgba(246, 247, 251, 0.82);
+  background-color: rgba(246, 247, 251, 0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 0.5px solid rgba(216, 218, 227, 0.8);
 }
 
 .ios-glass-tabbar {
-  background-color: rgba(255, 255, 255, 0.88);
+  background-color: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 0.5px solid rgba(233, 234, 240, 0.9);
@@ -75,7 +107,7 @@
 }
 .ios-active:active {
   transform: scale(0.97);
-  opacity: 0.88;
+  opacity: 0.90;
 }
 
 /* Hide scrollbar for tabs / chips */

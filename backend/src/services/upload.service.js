@@ -10,8 +10,8 @@ export const ALLOWED_FORMATS = ["jpg", "jpeg", "png", "webp"];
  * Each asset type is bound to exactly one account role so a worker can never
  * authorize an employer asset and vice versa. Storage is organized per user so
  * each user's assets are logically isolated:
- *  - worker_profile -> giglink/users/{userId}/profile/avatar
- *  - employer_logo  -> giglink/users/{userId}/company-logo/logo
+ *  - worker_profile / photo -> giglink/users/{userId}/profile/avatar
+ *  - employer_logo          -> giglink/users/{userId}/company-logo/logo
  *
  * A deterministic public_id (below) means a re-upload to the same asset key
  * overwrites the previous image in place, which cleanly implements replacement
@@ -19,6 +19,16 @@ export const ALLOWED_FORMATS = ["jpg", "jpeg", "png", "webp"];
  */
 export const ASSET_TYPES = {
   worker_profile: {
+    allowedRole: "worker",
+    publicIdSuffix: "profile/avatar",
+    folder: "profile",
+    field: "profileImage",
+    // square, auto-gravity (face-aware fallback to center), 400x400
+    transformation: "c_fill,g_auto,w_400,h_400",
+    label: "profile photo",
+    aspectRatio: "1:1",
+  },
+  photo: {
     allowedRole: "worker",
     publicIdSuffix: "profile/avatar",
     folder: "profile",
