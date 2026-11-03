@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
+import { corsOptions } from "./config/cors.js";
 
 import authRoutes from "./routes/auth.routes.js";
 import jobRoutes from "./routes/job.routes.js";
@@ -52,48 +53,8 @@ app.use(express.urlencoded({ extended: true }));
 // CORS
 // ======================================================
 
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-
-  // React / Vite
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-
-  // Other web development ports
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-
-  // Expo web
-  "http://localhost:8081",
-  "http://127.0.0.1:8081",
-].filter(Boolean);
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // React Native / mobile requests may not send an Origin header
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      console.warn(`❌ CORS blocked: ${origin}`);
-
-      return callback(new Error(`CORS origin denied: ${origin}`));
-    },
-
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-
-    allowedHeaders: ["Content-Type", "Authorization"],
-
-    credentials: true,
-
-    optionsSuccessStatus: 200,
-  })
-);
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // ======================================================
 // Rate Limiting
